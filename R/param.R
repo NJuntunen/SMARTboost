@@ -1,3 +1,4 @@
+#' @export
 SMARTparam <- function(
            loss = "L2",
            coeff = NULL,
@@ -46,16 +47,16 @@ SMARTparam <- function(
        τgridpoints=τgridpoints,
        refineOptimGrid=refineOptimGrid,
        xtolOptim=xtolOptim,
-       optimizevs=optimizevs,
-       sharptree=sharptree,
-       ntrees=ntrees,
-       R2p=R2p)
+       optimizevs=optimizevs)
   
 }
 
 
-
-
+structure(
+  list(
+    assets = c(1,2)
+  )
+)
 
 
 
