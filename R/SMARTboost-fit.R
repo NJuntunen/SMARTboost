@@ -95,23 +95,12 @@ SMARTboost.recipe <- function(x, data, ...) {
 # ------------------------------------------------------------------------------
 # Bridge
 
-SMARTboost_bridge <- function(processed, ...) {
-  predictors <- processed$predictors
-  outcome <- processed$outcomes[[1]]
+SMARTboost_bridge <- function(processed, param = SMARTparam(), ...) {
 
-  fit <- SMARTboost_impl(predictors, outcome)
-
-  new_SMARTboost(
-    coefs = fit$coefs,
-    blueprint = processed$blueprint
-  )
-}
-SMARTboost_bridge <- function(processed, param = SMARTparam(), SMARTboost_model) {
-
-  predictors <- processed$predictors
+  predictors <- processed$predictors %>%
+    as.matrix()
   outcomes <- processed$outcomes[[1]]
 
-  fit <- SMARTboost_impl(predictors, outcomes)
   # initialize SMARTtrees
   data <- preparedataSMART(predictors, param)
   meanx <- data$meanx
@@ -132,46 +121,16 @@ SMARTboost_bridge <- function(processed, param = SMARTparam(), SMARTboost_model)
   SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
 
   for (iter in 1:param$ntrees) {
-    Gβ <- i <- μ <- τ <- β <- fi2 <- fit_one_tree(rh$r, rh$h, data$x, SMARTtrees$infeatures, μgrid, dichotomous, τgrid, param)
+    out <- fit_one_tree(rh$r, rh$h, predictors, SMARTtrees$infeatures, μgrid, dichotomous, τgrid, param)
 
-    tree <- list(i = i, μ = μ, τ = τ, β = β, fi2 = fi2)
-    updateSMARTtrees(SMARTtrees, Gβ, tree, rh, iter)
+    tree <- list(i = out$i, μ = out$μ, τ = out$τ, β = out$β, fi2 = out$fi2)
+    updateSMARTtrees(SMARTtrees, out$Gβ, tree, rh, iter)
     rh <- evaluate_pseudoresid(data$y, SMARTtrees$gammafit, param)
   }
 
-  return(SMARTtrees)
-}
+  new_SMARTboost(
+    SMARTtrees = SMARTtrees,
+    blueprint = processed$blueprint
+  )
 
-# ------------------------------------------------------------------------------
-# Implementation
-
-SMARTboost_impl <- function(predictors, outcome) {
-
-  data <- preparedataSMART(predictors, param)
-  meanx <- data$meanx
-  stdx <- data$stdx
-  data <- data$data_standardized
-
-  grids <- preparegridsSMART(predictors, param)
-  τgrid <- grids$τgrid
-  μgrid <- grids$μgrid
-  dichotomous <- grids$dichotomous
-  n <- grids$n
-  p <- grids$p
-
-  gamma0 <- initialize_gamma(outcomes, param)
-  gammafit <- rep(gamma0, n)
-
-  rh <- evaluate_pseudoresid(outcomes, gammafit)
-  SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
-
-  for (iter in 1:param$ntrees) {
-    Gβ <- i <- μ <- τ <- β <- fi2 <- fit_one_tree(rh$r, rh$h, data, SMARTtrees$infeatures, μgrid, dichotomous, τgrid, param)
-
-    tree <- list(i = i, μ = μ, τ = τ, β = β, fi2 = fi2)
-    updateSMARTtrees(SMARTtrees, Gβ, tree, rh, iter)
-    rh <- evaluate_pseudoresid(data$y, SMARTtrees$gammafit, param)
-  }
-
-  return(SMARTtrees)
 }

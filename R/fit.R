@@ -49,7 +49,76 @@ gridmatrixμ <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
   return (list(mgrid = mgrid, dichotomous = dichotomous))
 }
 
+loopfeatures <- function(r, h, G0, x, ifit, infeatures, μgrid, dichotomous, τgrid, param, varϵ) {
+  p <- ncol(x)
+  outputarray <- matrix(Inf, p, 3)
 
+  ps <- 1:p
+
+  if (param$subsampleshare_columns < 1) {
+    psmall <- round(p * param$subsampleshare_columns)
+    ps <- sample(ps, psmall)
+  }
+
+  for (i in ps) {
+    t <- list(r = r, h = h, G0 = G0, xi = x[, i], infeaturesfit = updateinfeatures(infeatures, i), dichotomous = dichotomous, μgridi = μgrid[, i], dichotomous_i = dichotomous[i], τgrid = τgrid, param = param, varϵ = varϵ)
+    outputarray[i, ] <- add_depth(t)
+  }
+
+  outputarray
+}
+
+# TODO check that correct
+add_depth <- function(t) {
+  lossmatrix <- matrix(Inf, length(t$τgrid), length(t$μgridi))
+
+  n <- nrow(t$G0)
+  p <- ncol(t$G0)
+  G <- matrix(NA, n, 2*p)
+
+  if (t$dichotomous_i == TRUE) {
+    # no optimization needed
+    loss <- Gfitβ(t$r, t$h, t$G0, t$xi, t$param, t$varϵ, t$infeaturesfit, t$dichotomous, c(0, 0), t$dichotomous_i, G)
+    τ <- 999.9
+    μ <- 0
+  } else {
+    for (indexμ in 1:length(t$μgridi)) {
+      for (indexτ in 1:length(t$τgrid)) {
+        lossmatrix[indexτ, indexμ] <- Gfitβ(t$r, t$h, t$G0, t$xi, t$param, t$varϵ, t$infeaturesfit, t$dichotomous, c(t$μgridi[indexμ], log(t$τgrid[indexτ])), t$dichotomous_i, G)
+        if (indexτ > 1 && lossmatrix[indexτ, indexμ] > lossmatrix[indexτ - 1, indexμ]) {
+          break
+        }
+      }
+    }
+
+    minindex <- which.min(lossmatrix)
+    loss <- lossmatrix[minindex]
+    τ <- t$τgrid[minindex[1]]
+    μ <- t$μgridi[minindex[2]]
+
+    # Optionally, further optimize over μ. Perhaps needed for highly nonlinear functions.
+    if (t$param$optimizevs == TRUE) {
+      μ0 <- μ
+      res <- optim(
+        function(mu) Gfitβ2(t$r, t$h, t$G0, t$xi, t$param, t$varϵ, t$infeaturesfit, t$dichotomous, mu, τ, t$dichotomous_i, G),
+        par = μ0,
+        method = "BFGS",
+        control = list(iter.max = 100, reltol = t$param$xtolOptim)
+      )
+      loss <- res$value
+      μ <- res$par
+    }
+  }
+  return(c(loss, τ, μ))
+}
+
+updateinfeatures <- function(infeatures, ifit) {
+  x <- infeatures
+  for (i in ifit) {
+    x[i] <- TRUE
+  }
+  return (x)
+}
 
 preparedataSMART <- function(data, param) {
 
@@ -139,6 +208,4 @@ fit_one_tree <- function(r, h, x, infeatures, μgrid, dichotomous, τgrid, param
     }
   }
 }
-
-
 
