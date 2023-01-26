@@ -101,23 +101,25 @@ SMARTboost_bridge <- function(processed, param = SMARTparam(), ...) {
     as.matrix()
   outcomes <- processed$outcomes[[1]]
 
+  date <- processed$extras$roles$date
+
   # initialize SMARTtrees
-  data <- preparedataSMART(predictors, param)
+  data <- preparedataSMART(outcomes, predictors)
   meanx <- data$meanx
   stdx <- data$stdx
   data <- data$data_standardized
 
-  grids <- preparegridsSMART(predictors, param)
+  grids <- preparegridsSMART(data$x, param)
   τgrid <- grids$τgrid
   μgrid <- grids$μgrid
   dichotomous <- grids$dichotomous
   n <- grids$n
   p <- grids$p
 
-  gamma0 <- initialize_gamma(outcomes, param)
+  gamma0 <- initialize_gamma(data$y, param)
   gammafit <- rep(gamma0, n)
 
-  rh <- evaluate_pseudoresid(outcomes, gammafit)
+  rh <- evaluate_pseudoresid(data$y, gammafit)
   SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
 
   for (iter in 1:param$ntrees) {
