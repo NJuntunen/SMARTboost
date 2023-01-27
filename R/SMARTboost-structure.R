@@ -25,7 +25,7 @@ updateSMARTtrees <- function(SMARTtrees, Gβ, tree, rh, iter) {
   n <- length(Gβ)
   depth <- length(tree$i)
 
-  SMARTtrees$gammafit <- SMARTtrees$gammafit + SMARTtrees$param$lambda * Gβ
+  SMARTtrees$gammafit <- as.vector(SMARTtrees$gammafit + SMARTtrees$param$lambda * Gβ)
   SMARTtrees$infeatures <- updateinfeatures(SMARTtrees$infeatures, tree$i)
   SMARTtrees$trees <- append(SMARTtrees$trees, list(tree))
 
@@ -33,7 +33,7 @@ updateSMARTtrees <- function(SMARTtrees, Gβ, tree, rh, iter) {
     SMARTtrees$fi2[tree$i[d]] <- SMARTtrees$fi2[tree$i[d]] + tree$fi2[d]
   }
 
-  if (iter == 1 && SMARTtrees$param$R2p == as.numeric(T(0.898))) {
+  if (iter == 1 && SMARTtrees$param$R2p == 0.898) {
     sqrth <- sqrt(rh$h)
     R2tree <- var(Gβ * sqrth) / var(rh$r / sqrth)
     SMARTtrees$param$R2p <- R2tree

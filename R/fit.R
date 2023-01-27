@@ -49,9 +49,9 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
   return (list(mgrid = mgrid, dichotomous = dichotomous))
 }
 
-loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, taugrid, param, vareps) {
+loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, taugrid, param, var_epsilon) {
   p <- ncol(x)
-  outputarray <- matrix(rep(Inf, p*3), nrow = p, ncol = 3)
+  outputarray <- tibble()
   ps <- 1:p
 
   if (param$subsampleshare_columns < 1) {
@@ -61,9 +61,11 @@ loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, tau
 
   for (i in ps) {
     t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
-              dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, vareps = vareps)
-    outputarray[i, ] <- add_depth(t)
+              dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
+
+    outputarray <- bind_rows(outputarray,add_depth(t))
   }
+  outputarray <- as.matrix(outputarray)
   return(outputarray)
 }
 
@@ -119,22 +121,25 @@ fitbeta <- function(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu,
 
   GGh <- t(G) %*% G
 
-  Pb <- (sum(diag(GGh))/(n*var_r*param$R2p))*diag(p)
+  for (i in 1:p) {
+    GGh[i,i] <- max(GGh[i,i], max(diag(GGh)*0.00001))
+  }
 
+  Pb <- (sum(diag(GGh)) / (n*var_r*param$R2p))
   beta <- matrix(0,nrow=p,ncol=1)
 
-  tryCatch({beta <- solve(GGh + var_epsilon*param$loglikdivide*Pb, t(G) %*% r)}, warning = function(w) {
+  tryCatch({beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)}, warning = function(w) {
     while(class(w)=="SingularException") {
       Pb <- Pb*2.01
-      beta <- solve(GGh + var_epsilon*param$loglikdivide*Pb, t(G) %*% r)
+      beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)
     }
   })
 
   Gbeta <- G %*% beta
 
-  loglik <- -0.5*( (sum((r - Gbeta)^2)/var_epsilon) )/param$loglikdivide
+  loglik <- -0.5*( (sum((r - Gbeta)^2)/var_r) )/param$loglikdivide
 
-  logpdfbeta <- -0.5*( p*log(2*pi) - p*log(Pb[1,1]) + Pb[1,1]*(t(beta) %*% beta) )
+  logpdfbeta <- -0.5*( p*log(2*pi) - p*log(Pb) + Pb*(t(beta) %*% beta) )
 
   if (dichotomous_i) {
     logpdfmu <- 0
@@ -152,7 +157,7 @@ fitbeta <- function(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu,
   return(list(loss=loss, Gbeta=Gbeta, beta = beta))
 }
 
-Gfitbeta <- function(r, h, G0, xi, param, varEpsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G) {
+Gfitbeta <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G) {
 
   mu <- muLogTau[1]
   tau <- exp(muLogTau[2])
@@ -161,69 +166,64 @@ Gfitbeta <- function(r, h, G0, xi, param, varEpsilon, infeaturesfit, dichotomous
   gL <- sigmoidf(xi, mu, tau, param$sigmoid, dichotomous = dichotomous_i)
   G <- updateG_allocated(G0, gL, G)
 
-  result <- fitbeta(r, h, G, param, varEpsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
+  result <- fitbeta(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
 
   return(result$loss)
 }
 
-Gfitbeta2 <- function(r, h, G0, xi, param, vareps, infeaturesfit, dichotomous, muv, tau, dichotomous_i, G) {
+Gfitbeta2 <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muv, tau, dichotomous_i, G) {
   mu <- muv[1]
   tau <- max(tau, 0.2)  # Anything lower than 0.2 is still essentially linear, with very flat log-likelihood
 
   gL <- sigmoidf(xi, mu, tau, param$sigmoid, dichotomous = dichotomous_i)
   G <- updateG_allocated(G0, gL, G)
 
-  loss <- fitbeta(r, h, G, param, vareps, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
+  loss <- fitbeta(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
 
-  return(loss)
+  return(loss$loss)
 }
 
-#TODO : tama funktio ei toimi oikein, kysy chatGPTltä:
-#Write this julia optimization code using R and nloptr package:  if t.param.optimizevs==true
-#μ0   = [μ]
-#res  = Optim.optimize( μ -> Gfitβ2(t.r,t.h,t.G0,t.xi,t.param,t.varϵ,t.infeaturesfit,t.dichotomous,μ,τ,t.dichotomous_i,G),μ0,Optim.BFGS(linesearch = LineSearches.BackTracking()), Optim.Options(iterations = 100,x_tol = t.param.xtolOptim))
-#loss = res.minimum
-#μ    = res.minimizer[1]
-#end
-#add_depth <- function(t) {
-#  T <- typeof(t$varϵ)
-#  lossmatrix <- matrix(Inf,length(t$τgrid),length(t$μgridi))
+add_depth <- function(t) {
 
-#  n <- dim(t$G0)[1]
-#  p <- dim(t$G0)[2]
-#  G   <- matrix(numeric(n*(2*p)), n, 2*p)
+ lossmatrix <- matrix(Inf,length(t$taugrid),length(t$mugridi))
+ n <- dim(t$G0)[1]
+ p <- dim(t$G0)[2]
+ G <- matrix(NA, n, 2*p)
 
   if(t$dichotomous_i==TRUE) {   # no optimization needed
-    loss <- Gfitβ(t$r,t$h,t$G0,t$xi,t$param,t$varϵ,t$infeaturesfit,t$dichotomous,c(0,0),t$dichotomous_i,G)
-    τ <- 999.9
-    μ <- 0
+    loss <- Gfitbeta(t$r,t$h,t$G0,t$xi,t$param,t$var_epsilon,t$infeaturesfit,t$dichotomous,c(0,0),t$dichotomous_i,G)
+    tau <- 999.9
+    mu <- 0
   } else {
-    for (indexμ in 1:length(t$μgridi)) {
-      for (indexτ in 1:length(t$τgrid)) {
-        lossmatrix[indexτ,indexμ] <- Gfitβ(t$r,t$h,t$G0,t$xi,t$param,t$varϵ,t$infeaturesfit,t$dichotomous,c(t$μgridi[indexμ],log(t$τgrid[indexτ])),t$dichotomous_i,G)
-        if (indexτ > 1 && lossmatrix[indexτ,indexμ] > lossmatrix[indexτ-1,indexμ]) { break }   #  if loss increases, break loop over tau (reduces computation costs by some 25%)
+    for (indexmu in 1:length(t$mugridi)) {
+      for (indextau in 1:length(t$taugrid)) {
+        lossmatrix[indextau,indexmu] <- Gfitbeta(t$r,t$h,t$G0,t$xi,t$param,t$var_epsilon,t$infeaturesfit,t$dichotomous,c(t$mugridi[indexmu],log(t$taugrid[indextau])),t$dichotomous_i,G)
+        if (indextau > 1 && lossmatrix[indextau,indexmu] > lossmatrix[indextau-1,indexmu]) { break }   #  if loss increases, break loop over tau (reduces computation costs by some 25%)
       }
     }
 
-    minindex <- which(lossmatrix == min(lossmatrix), arr.ind = TRUE)   # returns a Cartesian index
-    loss <- lossmatrix[minindex]
+    minindex <- which(lossmatrix == min(lossmatrix), arr.ind = TRUE)[1,]   # returns a Cartesian index
+    loss <- lossmatrix[minindex[1], minindex[2]]
     tau <- t$taugrid[minindex[1]]
     mu <- t$mugridi[minindex[2]]
 
     # Optionally, further optimize over mu. Perhaps needed for highly nonlinear functions.
-    if (t$param$optimizevs == TRUE) {
-      mu0 <- mu
-      res <- optim(
-        function(mu) Gfitbeta2(t$r, t$h, t$G0, t$xi, t$param, t$vareps, t$infeaturesfit, t$dichotomous, mu, tau, t$dichotomous_i, G),
-        par = mu0,
-        method = "BFGS",
-        control = list(iter.max = 100, reltol = t$param$xtolOptim)
-      )
-      loss <- res$value
-      mu <- res$par
+    if (t$param$optimizevs) {
+      mu0 <- t$mu
+      res <- nloptr(x0 = mu0,
+                    eval_f = function(mu) Gfitbeta2(t$r, t$h, t$G0, t$xi, t$param, t$var_epsilon, t$infeaturesfit, t$dichotomous, mu, t$tau, t$dichotomous_i, G),
+                    lb = -Inf,
+                    ub = Inf,
+                    opts = list("algorithm" = "NLOPT_LN_BOBYQA",
+                                "xtol_rel" = t$param$xtolOptim,
+                                "maxeval" = 100))
+      loss <- res$objective
+      mu <- res$solution[1]
     }
   }
-  return(c(loss, tau, mu))
+
+  result <- tibble(loss = loss, tau = tau, mu = mu)
+  return(result)
 }
 
 updateinfeatures <- function(infeatures, ifit) {
@@ -265,16 +265,16 @@ preparegridsSMART <- function(data, param) {
   return(list(taugrid = taugrid, mugrid = mugrid, dichotomous = dichotomous, n = n, p = p))
 }
 
-optimize_mutau <- function(r,h,G0,xi,param,vareps,infeaturesfit,dichotomous,tau,dichotomous_i,mu0,T) {
+optimize_mutau <- function(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,tau,dichotomous_i,mu0,T) {
   n <- dim(G0)[1]
   p <- dim(G0)[2]
   G <- matrix(NA,n,p*2)
 
   objective_function <- function(mu) {
-    Gfitbeta2(r,h,G0,xi,param,vareps,infeaturesfit,dichotomous,mu,tau,dichotomous_i,G)
+    Gfitbeta2(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,mu,tau,dichotomous_i,G)
   }
 
-  options <- list(algorithm = "NLOPT_LD_LBFGS", maxeval = 100, xtol_rel = param$xtolOptim/(1+tau>10))
+  options <- list(algorithm = "NLOPT_LN_BOBYQA", maxeval = 100, xtol_rel = param$xtolOptim/(1+tau))
   optim_result <- nloptr::nloptr(x0 = mu0, eval_f = objective_function, opts = options)
 
   return(optim_result)
@@ -327,20 +327,21 @@ refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,ta
 
 fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, param) {
   var_wr <- var(r)
-  vareps <- var_wr * (1 - param$R2p)
+  var_epsilon <- var_wr * (1 - param$R2p)
 
   n <- nrow(x)
   p <- ncol(x)
   G0 <- matrix(1, n, 1) # initialize G, the matrix of features
   loss0 <- Inf
 
-  yfit0 <- matrix(0, n, 1)
-  ifit <- integer()
-  mufit <- numeric()
-  taufit <- numeric()
+  yfit0 <- rep(0, n)
+  ifit <- NULL
+  mufit <- NULL
+  taufit <- NULL
   infeaturesfit <- infeatures
-  fi2 <- matrix(0, param$depth, 1)
-  betafit <- numeric()
+  fi2 <- rep(0, param$depth)
+  betafit <- NULL
+
 
   subsamplesize <- round(n * param$subsamplesharevs)
 
@@ -353,37 +354,39 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
   for (depth in 1:param$depth) { #  NB must extend G for this to be viable
     # variable selection
     if (param$subsamplesharevs == 1) {
-      outputarray <- loopfeatures(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, vareps) # loops over all variables
+      outputarray <- loopfeatures(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
     } else { # Variable selection using a random sub-set of the sample. All the sample is then used in refinement.
       if (length(h) == 1) {
-        outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, vareps) # loops over all variables
+        outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
       } else {
-        outputarray <- loopfeatures(r[ssi], h, G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, vareps) # loops over all variables
+        outputarray <- loopfeatures(r[ssi], h, G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
       }
     }
 
-    i <- which.min(outputarray[, 1]) # outputarray[,1] is loss (minus log marginal likelihood) vector
+    i <- which(outputarray[, 1] == min(outputarray[, 1]), arr.ind = TRUE)[1] # outputarray[,1] is loss (minus log marginal likelihood) vector
     tau0 <- outputarray[i, 2]
     mu0 <- outputarray[i, 3]
-    print(outputarray)
 
     infeaturesfit <- updateinfeatures(infeaturesfit, i)
 
     # refine optimization, after variable selection
     if (param$subsamplesharevs < 1 && param$subsamplefinalbeta == TRUE) {
       if (length(h) == 1) {
-        loss <- refineOptim(r[ssi], h[ssi], G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, vareps)
+        loss <- refineOptim(r[ssi], h[ssi], G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
       } else {
-        loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, vareps)
+        loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
       }
     } else {
-      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, vareps)
+      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
     }
+    tau <- loss$tau
+    mu <- loss$mu
+    loss <- loss$loss
 
     gL <- sigmoidf(x[, i], mu, tau, param$sigmoid, dichotomous = dichotomous[i])
     G <- updateG_allocated(G0, gL, matrix(NA, n, 2^depth))
 
-    loss <- fitbeta(r, h, G, param, vareps, infeaturesfit, dichotomous, mu, tau, dichotomous[i])
+    loss <- fitbeta(r, h, G, param, var_epsilon = var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous[i])
     yfit <- loss$Gbeta
     beta <- loss$beta
     loss <- loss$loss
