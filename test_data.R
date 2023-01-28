@@ -11,3 +11,8 @@ SMARTrecipe <- recipes::recipe(data) %>%
   update_role(date, new_role = "date")
 
 x <- SMARTrecipe
+
+
+test <- SMARTboost(x ~ z+y,data = diamonds)
+
+predict(test, diamonds)

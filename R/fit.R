@@ -1,3 +1,30 @@
+
+updateG <- function(G0, g) {
+  if(is.vector(G0)){
+    p <- 1
+    n <- length(G0)
+
+    G <- matrix(nrow = n, ncol = p*2)
+    for (i in 1:p) {
+      G[, i] <- G0 * g
+      G[, i+p] <- G0 * (1 - g)
+    }
+  }else{
+    n <- nrow(G0)
+    p <- ncol(G0)
+
+    G <- matrix(nrow = n, ncol = p*2)
+    for (i in 1:p) {
+      G[, i] <- G0[,i] * g
+      G[, i+p] <- G0[,i] * (1 - g)
+    }
+  }
+  return(G)
+}
+
+
+
+
 gridvectortau <- function(meanlntau, taugridpoints, sharptree = FALSE) {
   stopifnot("taugridpoints must be between 3 and 5" = 1 <= taugridpoints & taugridpoints <= 5)
   if (sharptree) {
@@ -407,4 +434,35 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
   return(list(yfit0=yfit0,ifit=ifit,mufit=mufit,taufit=taufit,betafit=betafit,fi2=fi2))
 
 }
+
+SMARTtreebuild <- function(x, ij, muj, tauj, betaj, sigmoid) {
+  n <- nrow(x)
+  p <- ncol(x)
+  depth <- length(ij)
+  G <- rep(1, n)
+
+  for (d in 1:depth) {
+    i <- ij[d]
+    mu <- muj[d]
+    tau <- tauj[d]
+    gL <- sigmoidf(x[,i], mu, tau, sigmoid)
+    G <- updateG(G, gL)
+  }
+
+  gammafit <- G * betaj[,1]
+  return(gammafit)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 

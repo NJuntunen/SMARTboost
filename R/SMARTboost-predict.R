@@ -62,6 +62,23 @@ get_SMARTboost_predict_function <- function(type) {
 # Implementation
 
 predict_SMARTboost_numeric <- function(model, predictors) {
-  predictions <- rep(1L, times = nrow(predictors))
-  hardhat::spruce_numeric(predictions)
+
+  if(is.matrix(predictors)) {
+
+    names(model$SMARTtrees$meanx)
+
+    stopifnot("Column names does not match" = identical(colnames(predictors), names(model$SMARTtrees$meanx)))
+
+    predictors <- predictors[, reorder(colnames(predictors), match(colnames(predictors), names(model$SMARTtrees$meanx)))]
+
+    predictors <- (predictors - model$SMARTtrees$meanx)/model$SMARTtrees$stdx
+    gammafit <- model$SMARTtrees$gamma0
+    for(j in 1:length(model$SMARTtrees$trees)) {
+      tree <- model$SMARTtrees$trees[[j]]
+      gammafit <- gammafit + model$SMARTtrees$param$lambda*SMARTtreebuild(predictors, tree$i, tree$mu, tree$tau, tree$beta, model$SMARTtrees$param$sigmoid)
+    }
+  }else {
+    stop("Input 'x' must be either a matrix or a vector.")
+  }
+  hardhat::spruce_numeric(gammafit[,1])
 }
