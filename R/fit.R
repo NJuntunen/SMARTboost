@@ -52,7 +52,7 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
   p <- ncol(x)
   stopifnot("npoints cannot be larger than n" = npoints < n)
   mgrid <- matrix(NA, nrow = npoints, ncol = p)
-  dichotomous <- rep(FALSE, p)
+  # dichotomous <- rep(FALSE, p)
 
   if (n > maxn) {
     ssi <- sample(1:n, maxn, replace = FALSE)
@@ -60,20 +60,53 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
     ssi <- 1:n
   }
 
-  for (i in 1:p) {
-    dichotomous[i] <- length(unique(x[,i])) == 2
+  # for (i in 1:p) {
+  #   dichotomous[i] <- length(unique(x[,i])) == 2
+  #   if (!dichotomous[i]) {
+  #     mgrid[,i] <- quantile(x[,i], (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
+  #     u <- unique(mgrid[,i])
+  #     lu <- length(u)
+  #     if (lu <= 3) {
+  #       mgrid[1:lu,i] <- u[1:lu]
+  #       mgrid[(lu+1):npoints,i] <- quantile(unique(x[,i]), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
+  #     }
+  #   }
+  # }
+
+  # foreach(i = 1:p, .combine = cbind,, .packages = c("stats") .inorder = FALSE) %dopar% {
+  #   dichotomous[i] <- length(unique(x[,i])) == 2
+  #   if (!dichotomous[i]) {
+  #     mgrid[,i] <- quantile(x[,i], (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
+  #     u <- unique(mgrid[,i])
+  #     lu <- length(u)
+  #     if (lu <= 3) {
+  #       mgrid[1:lu,i] <- u[1:lu]
+  #       mgrid[(lu+1):npoints,i] <- quantile(unique(x[,i]), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
+  #     }
+  #   }
+  # }
+  #
+  dt <- as.data.table(x)
+
+  dichotomous <- purrr::map_vec(as.data.table(testi), function(col) {
+    length(unique(col)) == 2
+  })
+
+  mgrid <- map2_df(dt, 1:p, function(col, i) {
     if (!dichotomous[i]) {
-      mgrid[,i] <- quantile(x[,i], (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
-      u <- unique(mgrid[,i])
+      mgrid_col <- quantile(col, (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
+      u <- unique(mgrid_col)
       lu <- length(u)
       if (lu <= 3) {
-        mgrid[1:lu,i] <- u[1:lu]
-        mgrid[(lu+1):npoints,i] <- quantile(unique(x[,i]), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
+        mgrid_col[1:lu] <- u[1:lu]
+        mgrid_col[(lu+1):npoints] <- quantile(unique(col), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
       }
+      return(mgrid_col)
     }
-  }
+  })
+  print(mgrid)
 
-  return (list(mgrid = mgrid, dichotomous = dichotomous))
+  return (list(mgrid = as.matrix(mgrid), dichotomous = dichotomous))
 }
 
 loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, taugrid, param, var_epsilon) {
@@ -86,12 +119,22 @@ loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, tau
     ps <- sample(ps, psmall)
   }
 
-  for (i in ps) {
+  # for (i in ps) {
+  #   t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
+  #             dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
+  #
+  #   outputarray <- bind_rows(outputarray,add_depth(t))
+  # }
+
+  suppressWarnings(
+  outputarray <- foreach(i=ps, .combine='rbind', .packages=c("SMARTboost", "tibble")) %dopar% {
     t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
               dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
 
-    outputarray <- bind_rows(outputarray,add_depth(t))
+    add_depth(t)
   }
+  )
+
   outputarray <- as.matrix(outputarray)
   return(outputarray)
 }
@@ -334,11 +377,17 @@ refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,ta
     }
 
     lossmatrix <- matrix(NA,length(taugrid),2)
-    for (index_tau in 1:length(taugrid)) {
+
+    # for (index_tau in 1:length(taugrid)) {
+    #   res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
+    #   lossmatrix[index_tau,1] <- res$objective
+    #   lossmatrix[index_tau,2] <- res$solution[1]
+    # }
+
+    foreach(index_tau = 1:length(taugrid), .combine = rbind, .packages = c("nloptr")) %dopar% {
       res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
-      lossmatrix[index_tau,1] <- res$objective
-      lossmatrix[index_tau,2] <- res$solution[1]
-    }
+      c(res$objective, res$solution[1])
+    } -> lossmatrix
 
     minindex <- which.min(lossmatrix[,1])
     loss <- lossmatrix[minindex,1]
@@ -360,15 +409,13 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
   p <- ncol(x)
   G0 <- matrix(1, n, 1) # initialize G, the matrix of features
   loss0 <- Inf
-
-  yfit0 <- rep(0, n)
   ifit <- NULL
   mufit <- NULL
   taufit <- NULL
+  yfit0 <- rep(0, n)
+  print(ifit)
   infeaturesfit <- infeatures
   fi2 <- rep(0, param$depth)
-  betafit <- NULL
-
 
   subsamplesize <- round(n * param$subsamplesharevs)
 
@@ -380,6 +427,7 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
 
   for (depth in 1:param$depth) { #  NB must extend G for this to be viable
     # variable selection
+
     if (param$subsamplesharevs == 1) {
       outputarray <- loopfeatures(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
     } else { # Variable selection using a random sub-set of the sample. All the sample is then used in refinement.
@@ -423,7 +471,6 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     G0 <- G
     loss0 <- loss
     yfit0 <- yfit
-    betafit <- beta
     ifit <- c(ifit, i)
     mufit <- c(mufit, mu)
     taufit <- c(taufit, tau)
