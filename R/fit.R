@@ -88,7 +88,7 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
   #
   dt <- as.data.table(x)
 
-  dichotomous <- purrr::map_vec(as.data.table(testi), function(col) {
+  dichotomous <- purrr::map_vec(as.data.table(dt), function(col) {
     length(unique(col)) == 2
   })
 
@@ -104,7 +104,6 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
       return(mgrid_col)
     }
   })
-  print(mgrid)
 
   return (list(mgrid = as.matrix(mgrid), dichotomous = dichotomous))
 }
@@ -409,11 +408,10 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
   p <- ncol(x)
   G0 <- matrix(1, n, 1) # initialize G, the matrix of features
   loss0 <- Inf
-  ifit <- NULL
-  mufit <- NULL
-  taufit <- NULL
+  ifit <- vector()
+  mufit <- vector()
+  taufit <- vector()
   yfit0 <- rep(0, n)
-  print(ifit)
   infeaturesfit <- infeatures
   fi2 <- rep(0, param$depth)
 

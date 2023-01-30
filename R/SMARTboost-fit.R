@@ -123,7 +123,7 @@ SMARTboost_bridge <- function(processed, param = SMARTparam(ntrees = 10), ...) {
   SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
 
   for (iter in 1:param$ntrees) {
-    out <- fit_one_tree(rh$r, rh$h, predictors, SMARTtrees$infeatures, mugrid, dichotomous, taugrid, param)
+    out <- fit_one_tree(rh$r, rh$h, predictors,SMARTtrees$infeatures,mugrid, dichotomous, taugrid, param)
 
     tree <- list(i = out$ifit, mu = out$mufit, tau = out$taufit, beta = out$betafit, fi2 = out$fi2)
     SMARTtrees <- updateSMARTtrees(SMARTtrees, out$yfit0, tree, rh, iter)
