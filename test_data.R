@@ -2,7 +2,9 @@ pacman::p_load(tidymodels)
 
 data <- diamonds %>%
   select(x,y,z) %>%
-  mutate(date = seq(as.Date("1990-01-01"), by = "day", length.out = length(.$x)))
+  mutate(date = seq(as.Date("1990-01-01"), by = "day", length.out = length(.$x)),
+         across(where(is.numeric), ~.*100),
+         across(where(is.numeric), ~as.integer(.)))
 
 
 SMARTrecipe <- recipes::recipe(data) %>%
@@ -61,7 +63,11 @@ identical(s, d)
 
 
 
+add_boost_tree_SMARTboost()
 
+model_spec <- boost_tree(trees = 10) %>%
+  set_mode("regression") %>%
+  set_engine("SMARTboost")
 
 
 

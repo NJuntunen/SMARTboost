@@ -46,13 +46,13 @@
 #' mod3 <- SMARTboost(rec, mtcars)
 #'
 #' @export
-SMARTboost <- function(x, ...) {
+SMARTboost <- function(x, depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   UseMethod("SMARTboost")
 }
 
 #' @export
 #' @rdname SMARTboost
-SMARTboost.default <- function(x, ...) {
+SMARTboost.default <- function(x, depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   stop("`SMARTboost()` is not defined for a '", class(x)[1], "'.", call. = FALSE)
 }
 
@@ -60,42 +60,48 @@ SMARTboost.default <- function(x, ...) {
 
 #' @export
 #' @rdname SMARTboost
-SMARTboost.data.frame <- function(x, y, ...) {
+SMARTboost.data.frame <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, y)
-  SMARTboost_bridge(processed, ...)
+  SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
 
 # XY method - matrix
 
 #' @export
 #' @rdname SMARTboost
-SMARTboost.matrix <- function(x, y, ...) {
+SMARTboost.matrix <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, y)
-  SMARTboost_bridge(processed, ...)
+  SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
 
 # Formula method
 
 #' @export
 #' @rdname SMARTboost
-SMARTboost.formula <- function(formula, data, ...) {
+SMARTboost.formula <- function(formula, data,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(formula, data)
-  SMARTboost_bridge(processed, ...)
+  SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
 
 # Recipe method
 
 #' @export
 #' @rdname SMARTboost
-SMARTboost.recipe <- function(x, data, ...) {
+SMARTboost.recipe <- function(x, data,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, data)
-  SMARTboost_bridge(processed, ...)
+  SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
 
 # ------------------------------------------------------------------------------
 # Bridge
 
-SMARTboost_bridge <- function(processed, param = SMARTparam(ntrees = 10), ...) {
+SMARTboost_bridge <- function(processed, depth = NULL, ntrees = NULL, lambda = NULL, subsampleshare_columns = NULL, ...) {
+
+  param <- SMARTparam(depth = depth,
+                      ntrees = ntrees,
+                      lambda = lambda,
+                      subsampleshare_columns = subsampleshare_columns,
+                      ... = ...)
 
   predictors <- processed$predictors %>%
     as.matrix()

@@ -108,7 +108,7 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
   return (list(mgrid = as.matrix(mgrid), dichotomous = dichotomous))
 }
 
-loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, taugrid, param, var_epsilon) {
+loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, taugrid, param, var_epsilon,cl) {
   p <- ncol(x)
   outputarray <- tibble()
   ps <- 1:p
@@ -125,14 +125,26 @@ loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, tau
   #   outputarray <- bind_rows(outputarray,add_depth(t))
   # }
 
-  suppressWarnings(
-  outputarray <- foreach(i=ps, .combine='rbind', .packages=c("SMARTboost", "tibble")) %dopar% {
-    t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
-              dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
+  # suppressWarnings(
+  # outputarray <- foreach(i=ps, .combine='rbind', .packages=c("SMARTboost", "tibble")) %dopar% {
+  #   t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
+  #             dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
+  #
+  #   add_depth(t)
+  # }
+  # )
+
+  t_fun <- function(i) {
+    t <- list(r = r, h = h, G0 = G0, xi = x[, i], infeaturesfit = updateinfeatures(infeatures, i),
+              dichotomous = dichotomous, mugridi = mugrid[, i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
 
     add_depth(t)
   }
-  )
+
+  # cl <- makeCluster(detectCores()-20)
+  # clusterExport(cl, c("tibble"))
+  outputarray <- do.call(rbind, parLapply(cl, ps, t_fun))
+  # stopCluster(cl)
 
   outputarray <- as.matrix(outputarray)
   return(outputarray)
@@ -350,7 +362,7 @@ optimize_mutau <- function(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous
 }
 
 
-refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,tau0,param,var_epsilon) {
+refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,tau0,param,var_epsilon,cl) {
   if (dichotomous_i) {
     gL  <- sigmoidf(xi,mu0,tau0,param$sigmoid,dichotomous=dichotomous_i)
     n <- dim(G0)[1]
@@ -382,11 +394,18 @@ refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,ta
     #   lossmatrix[index_tau,1] <- res$objective
     #   lossmatrix[index_tau,2] <- res$solution[1]
     # }
+    # suppressWarnings(
+    # foreach(index_tau = 1:length(taugrid), .combine = rbind, .packages = c("nloptr")) %dopar% {
+    #   res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
+    #   c(res$objective, res$solution[1])
+    # } -> lossmatrix
+    # )
 
-    foreach(index_tau = 1:length(taugrid), .combine = rbind, .packages = c("nloptr")) %dopar% {
+    lossmatrix <- parLapply(cl, 1:length(taugrid), function(index_tau) {
       res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
       c(res$objective, res$solution[1])
-    } -> lossmatrix
+    })
+    lossmatrix <- do.call(rbind, lossmatrix)
 
     minindex <- which.min(lossmatrix[,1])
     loss <- lossmatrix[minindex,1]
@@ -423,16 +442,19 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     ssi <- sample(1:n, subsamplesize, replace = FALSE) # sub-sample indexes. Sub-sample no reimmission
   }
 
+  cl <- makeCluster(param$ncores)
+  clusterExport(cl, c("tibble", "nloptr"))
+
   for (depth in 1:param$depth) { #  NB must extend G for this to be viable
     # variable selection
 
     if (param$subsamplesharevs == 1) {
-      outputarray <- loopfeatures(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
+      outputarray <- loopfeatures(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon,cl) # loops over all variables
     } else { # Variable selection using a random sub-set of the sample. All the sample is then used in refinement.
       if (length(h) == 1) {
-        outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
+        outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon,cl) # loops over all variables
       } else {
-        outputarray <- loopfeatures(r[ssi], h, G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
+        outputarray <- loopfeatures(r[ssi], h, G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon,cl) # loops over all variables
       }
     }
 
@@ -445,12 +467,12 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     # refine optimization, after variable selection
     if (param$subsamplesharevs < 1 && param$subsamplefinalbeta == TRUE) {
       if (length(h) == 1) {
-        loss <- refineOptim(r[ssi], h[ssi], G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
+        loss <- refineOptim(r[ssi], h[ssi], G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon,cl)
       } else {
-        loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
+        loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon,cl)
       }
     } else {
-      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
+      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon,cl)
     }
     tau <- loss$tau
     mu <- loss$mu
@@ -475,6 +497,8 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     betafit <- beta
 
   }
+
+  stopCluster(cl)
 
   return(list(yfit0=yfit0,ifit=ifit,mufit=mufit,taufit=taufit,betafit=betafit,fi2=fi2))
 
