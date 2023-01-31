@@ -46,21 +46,21 @@
 #' mod3 <- SMARTboost(rec, mtcars)
 #'
 #' @export
-SMARTboost <- function(x, depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
-  UseMethod("SMARTboost")
+SMARTboost_fit <- function(x, depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
+  UseMethod("SMARTboost_fit")
 }
 
 #' @export
-#' @rdname SMARTboost
-SMARTboost.default <- function(x, depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
-  stop("`SMARTboost()` is not defined for a '", class(x)[1], "'.", call. = FALSE)
+#' @rdname SMARTboost_fit
+SMARTboost_fit.default <- function(x, depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
+  stop("`SMARTboost_fit()` is not defined for a '", class(x)[1], "'.", call. = FALSE)
 }
 
 # XY method - data frame
 
 #' @export
-#' @rdname SMARTboost
-SMARTboost.data.frame <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
+#' @rdname SMARTboost_fit
+SMARTboost_fit.data.frame <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, y)
   SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
@@ -68,7 +68,7 @@ SMARTboost.data.frame <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, su
 # XY method - matrix
 
 #' @export
-#' @rdname SMARTboost
+#' @rdname SMARTboost_fit
 SMARTboost.matrix <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, y)
   SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
@@ -77,8 +77,8 @@ SMARTboost.matrix <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsam
 # Formula method
 
 #' @export
-#' @rdname SMARTboost
-SMARTboost.formula <- function(formula, data,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
+#' @rdname SMARTboost_fit
+SMARTboost_fit.formula <- function(formula, data,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(formula, data)
   SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
@@ -86,8 +86,8 @@ SMARTboost.formula <- function(formula, data,depth = 4, ntrees = 100, lambda = 0
 # Recipe method
 
 #' @export
-#' @rdname SMARTboost
-SMARTboost.recipe <- function(x, data,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
+#' @rdname SMARTboost_fit
+SMARTboost_fit.recipe <- function(x, data,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, data)
   SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
@@ -127,6 +127,10 @@ SMARTboost_bridge <- function(processed, depth = NULL, ntrees = NULL, lambda = N
 
   rh <- evaluate_pseudoresid(data$y, gammafit)
   SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
+
+  if(param$ncores > 1){
+    plan(multisession, workers = param$ncores)
+  }
 
   for (iter in 1:param$ntrees) {
     out <- fit_one_tree(rh$r, rh$h, predictors,SMARTtrees$infeatures,mugrid, dichotomous, taugrid, param)

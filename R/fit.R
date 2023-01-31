@@ -86,20 +86,20 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
   #   }
   # }
   #
-  dt <- as.data.table(x)
+  dt <- data.table::as.data.table(x)
 
-  dichotomous <- purrr::map_vec(as.data.table(dt), function(col) {
+  dichotomous <- purrr::map_vec(data.table::as.data.table(dt), function(col) {
     length(unique(col)) == 2
   })
 
-  mgrid <- map2_df(dt, 1:p, function(col, i) {
+  mgrid <- purrr::map2_df(dt, 1:p, function(col, i) {
     if (!dichotomous[i]) {
-      mgrid_col <- quantile(col, (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
+      mgrid_col <- quantile(col, (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)), na.rm = TRUE)
       u <- unique(mgrid_col)
       lu <- length(u)
       if (lu <= 3) {
         mgrid_col[1:lu] <- u[1:lu]
-        mgrid_col[(lu+1):npoints] <- quantile(unique(col), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
+        mgrid_col[(lu+1):npoints] <- quantile(unique(col), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)), na.rm = TRUE)
       }
       return(mgrid_col)
     }
@@ -143,10 +143,11 @@ loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, tau
 
   # cl <- makeCluster(detectCores()-20)
   # clusterExport(cl, c("tibble"))
-  outputarray <- do.call(rbind, parLapply(cl, ps, t_fun))
+  outputarray <- do.call(rbind, purrr::map(ps, t_fun))
   # stopCluster(cl)
 
-  outputarray <- as.matrix(outputarray)
+  print(outputarray)
+  # outputarray <- as.matrix(outputarray)
   return(outputarray)
 }
 
@@ -401,7 +402,7 @@ refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,ta
     # } -> lossmatrix
     # )
 
-    lossmatrix <- parLapply(cl, 1:length(taugrid), function(index_tau) {
+    lossmatrix <- purrr::map(1:length(taugrid), function(index_tau) {
       res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
       c(res$objective, res$solution[1])
     })
@@ -442,8 +443,8 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     ssi <- sample(1:n, subsamplesize, replace = FALSE) # sub-sample indexes. Sub-sample no reimmission
   }
 
-  cl <- makeCluster(param$ncores)
-  clusterExport(cl, c("tibble", "nloptr"))
+  # cl <- makeCluster(param$ncores)
+  # clusterExport(cl, c("tibble", "nloptr"))
 
   for (depth in 1:param$depth) { #  NB must extend G for this to be viable
     # variable selection
