@@ -14,7 +14,11 @@ Imports:
     data.table,
     hardhat,
     nloptr,
+    Rcpp,
     rlang,
     stats
 Suggests: 
     recipes
+LinkingTo: 
+    Rcpp,
+    RcppEigen
