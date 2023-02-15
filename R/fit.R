@@ -146,7 +146,6 @@ loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, tau
   outputarray <- do.call(rbind, purrr::map(ps, t_fun))
   # stopCluster(cl)
 
-  print(outputarray)
   # outputarray <- as.matrix(outputarray)
   return(outputarray)
 }
@@ -197,46 +196,48 @@ lnptau <- function(tau, meanlntau, varlntau, doflntau, depth) {
 
 fitbeta <- function(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i) {
 
-  var_r <- var_epsilon/(1-param$R2p)  # var_epsilon is computed on the pseudo-residuals
-  n <- nrow(G)
-  p <- ncol(G)
+  testi <- fitbeta_cpp(r,G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
 
-  GGh <- t(G) %*% G
-
-  for (i in 1:p) {
-    GGh[i,i] <- max(GGh[i,i], max(diag(GGh)*0.00001))
-  }
-
-  Pb <- (sum(diag(GGh)) / (n*var_r*param$R2p))
-  beta <- matrix(0,nrow=p,ncol=1)
-
-  tryCatch({beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)}, warning = function(w) {
-    while(class(w)=="SingularException") {
-      Pb <- Pb*2.01
-      beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)
-    }
-  })
-
-  Gbeta <- G %*% beta
-
-  loglik <- -0.5*( (sum((r - Gbeta)^2)/var_r) )/param$loglikdivide
-
-  logpdfbeta <- -0.5*( p*log(2*pi) - p*log(Pb) + Pb*(t(beta) %*% beta) )
-
-  if (dichotomous_i) {
-    logpdfmu <- 0
-    logpdftau <- 0
-  } else if (param$sharptree==TRUE) {
-    logpdfmu <- lnpmu(mu,param$varmu,param$dofmu)
-    logpdftau <- 0
-  } else {
-    logpdfmu <- lnpmu(mu,param$varmu,param$dofmu)
-    logpdftau <- lnptau(tau,param$meanlntau,param$varlntau,param$doflntau,param$depth)
-  }
-
-  loss <- -( loglik + logpdfbeta + logpdftau + logpdfmu)
-
-  return(list(loss=loss, Gbeta=Gbeta, beta = beta))
+  # var_r <- var_epsilon/(1-param$R2p)  # var_epsilon is computed on the pseudo-residuals
+  # n <- nrow(G)
+  # p <- ncol(G)
+  #
+  # GGh <- t(G) %*% G
+  #
+  # for (i in 1:p) {
+  #   GGh[i,i] <- max(GGh[i,i], max(diag(GGh)*0.00001))
+  # }
+  #
+  # Pb <- (sum(diag(GGh)) / (n*var_r*param$R2p))
+  # beta <- matrix(0,nrow=p,ncol=1)
+  #
+  # tryCatch({beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)}, warning = function(w) {
+  #   while(class(w)=="SingularException") {
+  #     Pb <- Pb*2.01
+  #     beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)
+  #   }
+  # })
+  #
+  # Gbeta <- G %*% beta
+  #
+  # loglik <- -0.5*( (sum((r - Gbeta)^2)/var_r) )/param$loglikdivide
+  #
+  # logpdfbeta <- -0.5*( p*log(2*pi) - p*log(Pb) + Pb*(t(beta) %*% beta) )
+  #
+  # if (dichotomous_i) {
+  #   logpdfmu <- 0
+  #   logpdftau <- 0
+  # } else if (param$sharptree==TRUE) {
+  #   logpdfmu <- lnpmu(mu,param$varmu,param$dofmu)
+  #   logpdftau <- 0
+  # } else {
+  #   logpdfmu <- lnpmu(mu,param$varmu,param$dofmu)
+  #   logpdftau <- lnptau(tau,param$meanlntau,param$varlntau,param$doflntau,param$depth)
+  # }
+  #
+  # loss <- -( loglik + logpdfbeta + logpdftau + logpdfmu)
+  #
+  # return(list(loss=loss, Gbeta=Gbeta, beta = beta))
 }
 
 Gfitbeta <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G) {
@@ -248,7 +249,7 @@ Gfitbeta <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomou
   gL <- sigmoidf(xi, mu, tau, param$sigmoid, dichotomous = dichotomous_i)
   G <- updateG_allocated(G0, gL, G)
 
-  result <- fitbeta(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
+  result <- fitbeta_cpp(r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
 
   return(result$loss)
 }
@@ -257,10 +258,10 @@ Gfitbeta2 <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomo
   mu <- muv[1]
   tau <- max(tau, 0.2)  # Anything lower than 0.2 is still essentially linear, with very flat log-likelihood
 
-  gL <- sigmoidf(xi, mu, tau, param$sigmoid, dichotomous = dichotomous_i)
-  G <- updateG_allocated(G0, gL, G)
+  gL <- sigmoidf_cpp(xi, mu, tau, param$sigmoid, dichotomous = dichotomous_i)
+  G <- updateG_allocated_cpp(G0, gL, G)
 
-  loss <- fitbeta(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
+  loss <- fitbeta_cpp(r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
 
   return(loss$loss)
 }
@@ -273,13 +274,13 @@ add_depth <- function(t) {
  G <- matrix(NA, n, 2*p)
 
   if(t$dichotomous_i==TRUE) {   # no optimization needed
-    loss <- Gfitbeta(t$r,t$h,t$G0,t$xi,t$param,t$var_epsilon,t$infeaturesfit,t$dichotomous,c(0,0),t$dichotomous_i,G)
+    loss <- Gfitbeta_cpp(t$r,t$h,t$G0,t$xi,t$param,t$var_epsilon,t$infeaturesfit,t$dichotomous,c(0,0),t$dichotomous_i,G)
     tau <- 999.9
     mu <- 0
   } else {
     for (indexmu in 1:length(t$mugridi)) {
       for (indextau in 1:length(t$taugrid)) {
-        lossmatrix[indextau,indexmu] <- Gfitbeta(t$r,t$h,t$G0,t$xi,t$param,t$var_epsilon,t$infeaturesfit,t$dichotomous,c(t$mugridi[indexmu],log(t$taugrid[indextau])),t$dichotomous_i,G)
+        lossmatrix[indextau,indexmu] <- Gfitbeta_cpp(t$r,t$h,t$G0,t$xi,t$param,t$var_epsilon,t$infeaturesfit,t$dichotomous,c(t$mugridi[indexmu],log(t$taugrid[indextau])),t$dichotomous_i,G)
         if (indextau > 1 && lossmatrix[indextau,indexmu] > lossmatrix[indextau-1,indexmu]) { break }   #  if loss increases, break loop over tau (reduces computation costs by some 25%)
       }
     }
@@ -365,7 +366,7 @@ optimize_mutau <- function(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous
 
 refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,tau0,param,var_epsilon,cl) {
   if (dichotomous_i) {
-    gL  <- sigmoidf(xi,mu0,tau0,param$sigmoid,dichotomous=dichotomous_i)
+    gL  <- sigmoidf_cpp(xi,mu0,tau0,param$sigmoid,dichotomous=dichotomous_i)
     n <- dim(G0)[1]
     p <- dim(G0)[2]
     G   <- matrix(NA, n, p*2)
@@ -460,8 +461,8 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     }
 
     i <- which(outputarray[, 1] == min(outputarray[, 1]), arr.ind = TRUE)[1] # outputarray[,1] is loss (minus log marginal likelihood) vector
-    tau0 <- outputarray[i, 2]
-    mu0 <- outputarray[i, 3]
+    tau0 <- pull(outputarray[i, 2])
+    mu0 <- pull(outputarray[i, 3])
 
     infeaturesfit <- updateinfeatures(infeaturesfit, i)
 
@@ -479,10 +480,10 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     mu <- loss$mu
     loss <- loss$loss
 
-    gL <- sigmoidf(x[, i], mu, tau, param$sigmoid, dichotomous = dichotomous[i])
-    G <- updateG_allocated(G0, gL, matrix(NA, n, 2^depth))
+    gL <- sigmoidf_cpp(x[, i], mu, tau, param$sigmoid, dichotomous = dichotomous[i])
+    G <- updateG_allocated_cpp(G0, gL, matrix(NA, n, 2^depth))
 
-    loss <- fitbeta(r, h, G, param, var_epsilon = var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous[i])
+    loss <- fitbeta_cpp(r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous[i])
     yfit <- loss$Gbeta
     beta <- loss$beta
     loss <- loss$loss
@@ -499,7 +500,6 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
 
   }
 
-  stopCluster(cl)
 
   return(list(yfit0=yfit0,ifit=ifit,mufit=mufit,taufit=taufit,betafit=betafit,fi2=fi2))
 
@@ -515,7 +515,7 @@ SMARTtreebuild <- function(x, ij, muj, tauj, betaj, sigmoid) {
     i <- ij[d]
     mu <- muj[d]
     tau <- tauj[d]
-    gL <- sigmoidf(x[,i], mu, tau, sigmoid)
+    gL <- sigmoidf_cpp(x[,i], mu, tau, sigmoid)
     G <- updateG(G, gL)
   }
 

@@ -31,7 +31,7 @@ cl <- makeCluster(detectCores()-20) # Create a cluster with the number of cores 
 registerDoParallel(cl)
 
 tic()
-test <- SMARTboost(x ~ z+y,data = diamonds)
+test <- SMARTboost_fit(x ~ z+y,data = diamonds, ntrees = 10)
 toc()
 predict(test, diamonds)
 

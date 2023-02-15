@@ -41,7 +41,7 @@ SMARTparam <- function(
        lambda=lambda,
        depth=depth,
        sigmoid=sigmoid,
-       meanlnatau=meanlntau,
+       meanlntau=meanlntau,
        varlntau=varlntau,
        doflntau=doflntau,
        varmu=varmu,

@@ -11,8 +11,36 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// sigmoidf_cpp
+NumericVector sigmoidf_cpp(NumericVector x, double mu, double tau, std::string sigmoid, bool dichotomous);
+RcppExport SEXP _SMARTboost_sigmoidf_cpp(SEXP xSEXP, SEXP muSEXP, SEXP tauSEXP, SEXP sigmoidSEXP, SEXP dichotomousSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
+    Rcpp::traits::input_parameter< std::string >::type sigmoid(sigmoidSEXP);
+    Rcpp::traits::input_parameter< bool >::type dichotomous(dichotomousSEXP);
+    rcpp_result_gen = Rcpp::wrap(sigmoidf_cpp(x, mu, tau, sigmoid, dichotomous));
+    return rcpp_result_gen;
+END_RCPP
+}
+// updateG_allocated_cpp
+Eigen::MatrixXd updateG_allocated_cpp(Eigen::MatrixXd G0, NumericVector g, Eigen::MatrixXd G);
+RcppExport SEXP _SMARTboost_updateG_allocated_cpp(SEXP G0SEXP, SEXP gSEXP, SEXP GSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type g(gSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G(GSEXP);
+    rcpp_result_gen = Rcpp::wrap(updateG_allocated_cpp(G0, g, G));
+    return rcpp_result_gen;
+END_RCPP
+}
 // fitbeta_cpp
-List fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, List param, List infeaturesfit, bool dichotomous, double mu, double tau, bool dichotomous_i);
+List fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, List param, List infeaturesfit, List dichotomous, double mu, double tau, bool dichotomous_i);
 RcppExport SEXP _SMARTboost_fitbeta_cpp(SEXP rSEXP, SEXP GSEXP, SEXP var_epsilonSEXP, SEXP paramSEXP, SEXP infeaturesfitSEXP, SEXP dichotomousSEXP, SEXP muSEXP, SEXP tauSEXP, SEXP dichotomous_iSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -22,7 +50,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
     Rcpp::traits::input_parameter< List >::type param(paramSEXP);
     Rcpp::traits::input_parameter< List >::type infeaturesfit(infeaturesfitSEXP);
-    Rcpp::traits::input_parameter< bool >::type dichotomous(dichotomousSEXP);
+    Rcpp::traits::input_parameter< List >::type dichotomous(dichotomousSEXP);
     Rcpp::traits::input_parameter< double >::type mu(muSEXP);
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
@@ -30,9 +58,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Gfitbeta_cpp
+double Gfitbeta_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, NumericVector xi, List param, double var_epsilon, List infeaturesfit, List dichotomous, List muLogTau, bool dichotomous_i, Eigen::MatrixXd G);
+RcppExport SEXP _SMARTboost_Gfitbeta_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP paramSEXP, SEXP var_epsilonSEXP, SEXP infeaturesfitSEXP, SEXP dichotomousSEXP, SEXP muLogTauSEXP, SEXP dichotomous_iSEXP, SEXP GSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type r(rSEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type h(hSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< List >::type param(paramSEXP);
+    Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
+    Rcpp::traits::input_parameter< List >::type infeaturesfit(infeaturesfitSEXP);
+    Rcpp::traits::input_parameter< List >::type dichotomous(dichotomousSEXP);
+    Rcpp::traits::input_parameter< List >::type muLogTau(muLogTauSEXP);
+    Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G(GSEXP);
+    rcpp_result_gen = Rcpp::wrap(Gfitbeta_cpp(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_SMARTboost_sigmoidf_cpp", (DL_FUNC) &_SMARTboost_sigmoidf_cpp, 5},
+    {"_SMARTboost_updateG_allocated_cpp", (DL_FUNC) &_SMARTboost_updateG_allocated_cpp, 3},
     {"_SMARTboost_fitbeta_cpp", (DL_FUNC) &_SMARTboost_fitbeta_cpp, 9},
+    {"_SMARTboost_Gfitbeta_cpp", (DL_FUNC) &_SMARTboost_Gfitbeta_cpp, 11},
     {NULL, NULL, 0}
 };
 
