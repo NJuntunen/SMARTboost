@@ -1,4 +1,4 @@
-pacman::p_load(tidymodels)
+pacman::p_load(tidymodels, profvis, nloptr, tictoc, purrr, SMARTboost)
 
 data <- diamonds %>%
   select(x,y,z) %>%
@@ -14,24 +14,8 @@ SMARTrecipe <- recipes::recipe(data) %>%
 
 x <- SMARTrecipe
 
-
-library(foreach)
-library(doParallel)
-
-remove_parallel_backend <- function(){
-
-  env <- foreach:::.foreachGlobals
-  rm(list= ls(name=env), pos=env)
-
-}
-
-devtools::load_all()
-
-cl <- makeCluster(detectCores()-20) # Create a cluster with the number of cores available
-registerDoParallel(cl)
-
 tic()
-test <- SMARTboost_fit(x ~ z+y,data = diamonds, ntrees = 10)
+test <- SMARTboost_fit(x ~ z+y,data = diamonds, ntrees = 10, optimizevs = FALSE, ncores = 4)
 toc()
 predict(test, diamonds)
 

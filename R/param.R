@@ -1,3 +1,5 @@
+#' @importFrom RcppParallel RcppParallelLibs
+#' @importFrom RcppThread detectCores
 #' @export
 SMARTparam <- function(
            loss = "L2",

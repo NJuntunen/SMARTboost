@@ -128,10 +128,6 @@ SMARTboost_bridge <- function(processed, depth = NULL, ntrees = NULL, lambda = N
   rh <- evaluate_pseudoresid(data$y, gammafit)
   SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
 
-  if(param$ncores > 1){
-    plan(multisession, workers = param$ncores)
-  }
-
   for (iter in 1:param$ntrees) {
     print(iter)
     out <- fit_one_tree(rh$r, rh$h, predictors,SMARTtrees$infeatures,mugrid, dichotomous, taugrid, param)

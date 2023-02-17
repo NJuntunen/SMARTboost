@@ -15,10 +15,14 @@ Imports:
     hardhat,
     nloptr,
     Rcpp,
+    RcppParallel,
     rlang,
     stats
 Suggests: 
     recipes
 LinkingTo: 
     Rcpp,
-    RcppEigen
+    RcppArmadillo,
+    RcppEigen,
+    RcppParallel,
+    RcppThread

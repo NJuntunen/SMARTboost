@@ -60,32 +60,6 @@ gridmatrixmu <- function(x, npoints, tol = 0.005, maxiter = 100, fuzzy = FALSE, 
     ssi <- 1:n
   }
 
-  # for (i in 1:p) {
-  #   dichotomous[i] <- length(unique(x[,i])) == 2
-  #   if (!dichotomous[i]) {
-  #     mgrid[,i] <- quantile(x[,i], (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
-  #     u <- unique(mgrid[,i])
-  #     lu <- length(u)
-  #     if (lu <= 3) {
-  #       mgrid[1:lu,i] <- u[1:lu]
-  #       mgrid[(lu+1):npoints,i] <- quantile(unique(x[,i]), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
-  #     }
-  #   }
-  # }
-
-  # foreach(i = 1:p, .combine = cbind,, .packages = c("stats") .inorder = FALSE) %dopar% {
-  #   dichotomous[i] <- length(unique(x[,i])) == 2
-  #   if (!dichotomous[i]) {
-  #     mgrid[,i] <- quantile(x[,i], (1/(npoints+1)):(1/(npoints+1)):(1-1/(npoints+1)))
-  #     u <- unique(mgrid[,i])
-  #     lu <- length(u)
-  #     if (lu <= 3) {
-  #       mgrid[1:lu,i] <- u[1:lu]
-  #       mgrid[(lu+1):npoints,i] <- quantile(unique(x[,i]), (1/(npoints+1-lu)):(1/(npoints+1-lu)):(1-1/(npoints+1-lu)))
-  #     }
-  #   }
-  # }
-  #
   dt <- data.table::as.data.table(x)
 
   dichotomous <- purrr::map_vec(data.table::as.data.table(dt), function(col) {
@@ -118,35 +92,16 @@ loopfeatures <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, tau
     ps <- sample(ps, psmall)
   }
 
-  # for (i in ps) {
-  #   t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
-  #             dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
-  #
-  #   outputarray <- bind_rows(outputarray,add_depth(t))
-  # }
-
-  # suppressWarnings(
-  # outputarray <- foreach(i=ps, .combine='rbind', .packages=c("SMARTboost", "tibble")) %dopar% {
-  #   t <- list(r = r, h = h, G0 = G0, xi = x[,i], infeaturesfit = updateinfeatures(infeatures, i),
-  #             dichotomous = dichotomous, mugridi = mugrid[,i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
-  #
-  #   add_depth(t)
-  # }
-  # )
-
   t_fun <- function(i) {
     t <- list(r = r, h = h, G0 = G0, xi = x[, i], infeaturesfit = updateinfeatures(infeatures, i),
               dichotomous = dichotomous, mugridi = mugrid[, i], dichotomous_i = dichotomous[i], taugrid = taugrid, param = param, var_epsilon = var_epsilon)
 
-    add_depth(t)
+    add_depth_cpp(t)
   }
 
-  # cl <- makeCluster(detectCores()-20)
-  # clusterExport(cl, c("tibble"))
-  outputarray <- do.call(rbind, purrr::map(ps, t_fun))
-  # stopCluster(cl)
 
-  # outputarray <- as.matrix(outputarray)
+  outputarray <- do.call(rbind, purrr::map(ps, t_fun))
+
   return(outputarray)
 }
 
@@ -193,67 +148,6 @@ lnptau <- function(tau, meanlntau, varlntau, doflntau, depth) {
   return(lnp)
 }
 
-
-fitbeta <- function(r, h, G, param, var_epsilon, infeaturesfit, dichotomous, mu, tau, dichotomous_i) {
-
-  testi <- fitbeta_cpp(r,G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
-
-  # var_r <- var_epsilon/(1-param$R2p)  # var_epsilon is computed on the pseudo-residuals
-  # n <- nrow(G)
-  # p <- ncol(G)
-  #
-  # GGh <- t(G) %*% G
-  #
-  # for (i in 1:p) {
-  #   GGh[i,i] <- max(GGh[i,i], max(diag(GGh)*0.00001))
-  # }
-  #
-  # Pb <- (sum(diag(GGh)) / (n*var_r*param$R2p))
-  # beta <- matrix(0,nrow=p,ncol=1)
-  #
-  # tryCatch({beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)}, warning = function(w) {
-  #   while(class(w)=="SingularException") {
-  #     Pb <- Pb*2.01
-  #     beta <- solve(GGh + var_r*param$loglikdivide*Pb, t(G) %*% r)
-  #   }
-  # })
-  #
-  # Gbeta <- G %*% beta
-  #
-  # loglik <- -0.5*( (sum((r - Gbeta)^2)/var_r) )/param$loglikdivide
-  #
-  # logpdfbeta <- -0.5*( p*log(2*pi) - p*log(Pb) + Pb*(t(beta) %*% beta) )
-  #
-  # if (dichotomous_i) {
-  #   logpdfmu <- 0
-  #   logpdftau <- 0
-  # } else if (param$sharptree==TRUE) {
-  #   logpdfmu <- lnpmu(mu,param$varmu,param$dofmu)
-  #   logpdftau <- 0
-  # } else {
-  #   logpdfmu <- lnpmu(mu,param$varmu,param$dofmu)
-  #   logpdftau <- lnptau(tau,param$meanlntau,param$varlntau,param$doflntau,param$depth)
-  # }
-  #
-  # loss <- -( loglik + logpdfbeta + logpdftau + logpdfmu)
-  #
-  # return(list(loss=loss, Gbeta=Gbeta, beta = beta))
-}
-
-Gfitbeta <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G) {
-
-  mu <- muLogTau[1]
-  tau <- exp(muLogTau[2])
-  tau <- max(tau, 0.2) # Anything lower than 0.2 is still essentially linear, with very flat log-likelihood
-
-  gL <- sigmoidf(xi, mu, tau, param$sigmoid, dichotomous = dichotomous_i)
-  G <- updateG_allocated(G0, gL, G)
-
-  result <- fitbeta_cpp(r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i)
-
-  return(result$loss)
-}
-
 Gfitbeta2 <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muv, tau, dichotomous_i, G) {
   mu <- muv[1]
   tau <- max(tau, 0.2)  # Anything lower than 0.2 is still essentially linear, with very flat log-likelihood
@@ -295,8 +189,8 @@ add_depth <- function(t) {
       mu0 <- t$mu
       res <- nloptr(x0 = mu0,
                     eval_f = function(mu) Gfitbeta2(t$r, t$h, t$G0, t$xi, t$param, t$var_epsilon, t$infeaturesfit, t$dichotomous, mu, t$tau, t$dichotomous_i, G),
-                    lb = -Inf,
-                    ub = Inf,
+                    lb = rep(-Inf, length(mu0)),
+                    ub = rep(Inf, length(mu0)),
                     opts = list("algorithm" = "NLOPT_LN_BOBYQA",
                                 "xtol_rel" = t$param$xtolOptim,
                                 "maxeval" = 100))
@@ -391,18 +285,6 @@ refineOptim <- function(r,h,G0,xi,infeaturesfit,dichotomous,mu0,dichotomous_i,ta
 
     lossmatrix <- matrix(NA,length(taugrid),2)
 
-    # for (index_tau in 1:length(taugrid)) {
-    #   res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
-    #   lossmatrix[index_tau,1] <- res$objective
-    #   lossmatrix[index_tau,2] <- res$solution[1]
-    # }
-    # suppressWarnings(
-    # foreach(index_tau = 1:length(taugrid), .combine = rbind, .packages = c("nloptr")) %dopar% {
-    #   res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
-    #   c(res$objective, res$solution[1])
-    # } -> lossmatrix
-    # )
-
     lossmatrix <- purrr::map(1:length(taugrid), function(index_tau) {
       res <- optimize_mutau(r,h,G0,xi,param,var_epsilon,infeaturesfit,dichotomous,taugrid[index_tau],dichotomous_i,mu0)
       c(res$objective, res$solution[1])
@@ -444,25 +326,22 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     ssi <- sample(1:n, subsamplesize, replace = FALSE) # sub-sample indexes. Sub-sample no reimmission
   }
 
-  # cl <- makeCluster(param$ncores)
-  # clusterExport(cl, c("tibble", "nloptr"))
-
   for (depth in 1:param$depth) { #  NB must extend G for this to be viable
     # variable selection
 
     if (param$subsamplesharevs == 1) {
-      outputarray <- loopfeatures(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon,cl) # loops over all variables
+      outputarray <- loopfeatures_cpp(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
     } else { # Variable selection using a random sub-set of the sample. All the sample is then used in refinement.
       if (length(h) == 1) {
-        outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon,cl) # loops over all variables
+        outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
       } else {
-        outputarray <- loopfeatures(r[ssi], h, G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon,cl) # loops over all variables
+        outputarray <- loopfeatures(r[ssi], h, G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
       }
     }
-
+    #outputarray <- do.call(rbind, outputarray)
     i <- which(outputarray[, 1] == min(outputarray[, 1]), arr.ind = TRUE)[1] # outputarray[,1] is loss (minus log marginal likelihood) vector
-    tau0 <- pull(outputarray[i, 2])
-    mu0 <- pull(outputarray[i, 3])
+    tau0 <- outputarray[i, 2]
+    mu0 <- outputarray[i, 3]
 
     infeaturesfit <- updateinfeatures(infeaturesfit, i)
 
