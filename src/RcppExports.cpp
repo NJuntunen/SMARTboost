@@ -14,12 +14,12 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // sigmoidf_cpp
-NumericVector sigmoidf_cpp(NumericVector x, double mu, double tau, std::string sigmoid, bool dichotomous);
+Eigen::VectorXd sigmoidf_cpp(Eigen::VectorXd x, double mu, double tau, std::string sigmoid, bool dichotomous);
 RcppExport SEXP _SMARTboost_sigmoidf_cpp(SEXP xSEXP, SEXP muSEXP, SEXP tauSEXP, SEXP sigmoidSEXP, SEXP dichotomousSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type x(xSEXP);
     Rcpp::traits::input_parameter< double >::type mu(muSEXP);
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< std::string >::type sigmoid(sigmoidSEXP);
@@ -29,21 +29,21 @@ BEGIN_RCPP
 END_RCPP
 }
 // updateG_allocated_cpp
-Eigen::MatrixXd updateG_allocated_cpp(Eigen::MatrixXd G0, NumericVector g, Eigen::MatrixXd G);
+Eigen::MatrixXd updateG_allocated_cpp(Eigen::MatrixXd G0, Eigen::VectorXd g, Eigen::MatrixXd G);
 RcppExport SEXP _SMARTboost_updateG_allocated_cpp(SEXP G0SEXP, SEXP gSEXP, SEXP GSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type g(gSEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type g(gSEXP);
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G(GSEXP);
     rcpp_result_gen = Rcpp::wrap(updateG_allocated_cpp(G0, g, G));
     return rcpp_result_gen;
 END_RCPP
 }
 // fitbeta_cpp
-List fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, List param, LogicalVector infeaturesfit, LogicalVector dichotomous, double mu, double tau, bool dichotomous_i, double R2p, double loglikdivide, bool sharptree, double varmu, double varlntau, double meanlntau, double dofmu, double doflntau, int depth);
-RcppExport SEXP _SMARTboost_fitbeta_cpp(SEXP rSEXP, SEXP GSEXP, SEXP var_epsilonSEXP, SEXP paramSEXP, SEXP infeaturesfitSEXP, SEXP dichotomousSEXP, SEXP muSEXP, SEXP tauSEXP, SEXP dichotomous_iSEXP, SEXP R2pSEXP, SEXP loglikdivideSEXP, SEXP sharptreeSEXP, SEXP varmuSEXP, SEXP varlntauSEXP, SEXP meanlntauSEXP, SEXP dofmuSEXP, SEXP doflntauSEXP, SEXP depthSEXP) {
+List fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, List param, LogicalVector infeaturesfit, double mu, double tau, bool dichotomous_i);
+RcppExport SEXP _SMARTboost_fitbeta_cpp(SEXP rSEXP, SEXP GSEXP, SEXP var_epsilonSEXP, SEXP paramSEXP, SEXP infeaturesfitSEXP, SEXP muSEXP, SEXP tauSEXP, SEXP dichotomous_iSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -52,85 +52,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
     Rcpp::traits::input_parameter< List >::type param(paramSEXP);
     Rcpp::traits::input_parameter< LogicalVector >::type infeaturesfit(infeaturesfitSEXP);
-    Rcpp::traits::input_parameter< LogicalVector >::type dichotomous(dichotomousSEXP);
     Rcpp::traits::input_parameter< double >::type mu(muSEXP);
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
-    Rcpp::traits::input_parameter< double >::type R2p(R2pSEXP);
-    Rcpp::traits::input_parameter< double >::type loglikdivide(loglikdivideSEXP);
-    Rcpp::traits::input_parameter< bool >::type sharptree(sharptreeSEXP);
-    Rcpp::traits::input_parameter< double >::type varmu(varmuSEXP);
-    Rcpp::traits::input_parameter< double >::type varlntau(varlntauSEXP);
-    Rcpp::traits::input_parameter< double >::type meanlntau(meanlntauSEXP);
-    Rcpp::traits::input_parameter< double >::type dofmu(dofmuSEXP);
-    Rcpp::traits::input_parameter< double >::type doflntau(doflntauSEXP);
-    Rcpp::traits::input_parameter< int >::type depth(depthSEXP);
-    rcpp_result_gen = Rcpp::wrap(fitbeta_cpp(r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i, R2p, loglikdivide, sharptree, varmu, varlntau, meanlntau, dofmu, doflntau, depth));
-    return rcpp_result_gen;
-END_RCPP
-}
-// Gfitbeta_cpp
-double Gfitbeta_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, NumericVector xi, List param, double var_epsilon, LogicalVector infeaturesfit, LogicalVector dichotomous, List muLogTau, bool dichotomous_i, Eigen::MatrixXd G, double R2p, double loglikdivide, bool sharptree, double varmu, double dofmu, double varlntau, double meanlntau, double doflntau, int depth);
-RcppExport SEXP _SMARTboost_Gfitbeta_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP paramSEXP, SEXP var_epsilonSEXP, SEXP infeaturesfitSEXP, SEXP dichotomousSEXP, SEXP muLogTauSEXP, SEXP dichotomous_iSEXP, SEXP GSEXP, SEXP R2pSEXP, SEXP loglikdivideSEXP, SEXP sharptreeSEXP, SEXP varmuSEXP, SEXP dofmuSEXP, SEXP varlntauSEXP, SEXP meanlntauSEXP, SEXP doflntauSEXP, SEXP depthSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type r(rSEXP);
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type h(hSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type xi(xiSEXP);
-    Rcpp::traits::input_parameter< List >::type param(paramSEXP);
-    Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
-    Rcpp::traits::input_parameter< LogicalVector >::type infeaturesfit(infeaturesfitSEXP);
-    Rcpp::traits::input_parameter< LogicalVector >::type dichotomous(dichotomousSEXP);
-    Rcpp::traits::input_parameter< List >::type muLogTau(muLogTauSEXP);
-    Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G(GSEXP);
-    Rcpp::traits::input_parameter< double >::type R2p(R2pSEXP);
-    Rcpp::traits::input_parameter< double >::type loglikdivide(loglikdivideSEXP);
-    Rcpp::traits::input_parameter< bool >::type sharptree(sharptreeSEXP);
-    Rcpp::traits::input_parameter< double >::type varmu(varmuSEXP);
-    Rcpp::traits::input_parameter< double >::type dofmu(dofmuSEXP);
-    Rcpp::traits::input_parameter< double >::type varlntau(varlntauSEXP);
-    Rcpp::traits::input_parameter< double >::type meanlntau(meanlntauSEXP);
-    Rcpp::traits::input_parameter< double >::type doflntau(doflntauSEXP);
-    Rcpp::traits::input_parameter< int >::type depth(depthSEXP);
-    rcpp_result_gen = Rcpp::wrap(Gfitbeta_cpp(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G, R2p, loglikdivide, sharptree, varmu, dofmu, varlntau, meanlntau, doflntau, depth));
-    return rcpp_result_gen;
-END_RCPP
-}
-// add_depth_cpp
-DataFrame add_depth_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, NumericVector xi, LogicalVector infeaturesfit, LogicalVector dichotomous, bool dichotomous_i, NumericVector mugridi, NumericVector taugrid, List param, double var_epsilon, double R2p, double loglikdivide, bool sharptree, double varmu, double varlntau, double meanlntau, double dofmu, double doflntau, int depth);
-RcppExport SEXP _SMARTboost_add_depth_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP infeaturesfitSEXP, SEXP dichotomousSEXP, SEXP dichotomous_iSEXP, SEXP mugridiSEXP, SEXP taugridSEXP, SEXP paramSEXP, SEXP var_epsilonSEXP, SEXP R2pSEXP, SEXP loglikdivideSEXP, SEXP sharptreeSEXP, SEXP varmuSEXP, SEXP varlntauSEXP, SEXP meanlntauSEXP, SEXP dofmuSEXP, SEXP doflntauSEXP, SEXP depthSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type r(rSEXP);
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type h(hSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type xi(xiSEXP);
-    Rcpp::traits::input_parameter< LogicalVector >::type infeaturesfit(infeaturesfitSEXP);
-    Rcpp::traits::input_parameter< LogicalVector >::type dichotomous(dichotomousSEXP);
-    Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type mugridi(mugridiSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type taugrid(taugridSEXP);
-    Rcpp::traits::input_parameter< List >::type param(paramSEXP);
-    Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
-    Rcpp::traits::input_parameter< double >::type R2p(R2pSEXP);
-    Rcpp::traits::input_parameter< double >::type loglikdivide(loglikdivideSEXP);
-    Rcpp::traits::input_parameter< bool >::type sharptree(sharptreeSEXP);
-    Rcpp::traits::input_parameter< double >::type varmu(varmuSEXP);
-    Rcpp::traits::input_parameter< double >::type varlntau(varlntauSEXP);
-    Rcpp::traits::input_parameter< double >::type meanlntau(meanlntauSEXP);
-    Rcpp::traits::input_parameter< double >::type dofmu(dofmuSEXP);
-    Rcpp::traits::input_parameter< double >::type doflntau(doflntauSEXP);
-    Rcpp::traits::input_parameter< int >::type depth(depthSEXP);
-    rcpp_result_gen = Rcpp::wrap(add_depth_cpp(r, h, G0, xi, infeaturesfit, dichotomous, dichotomous_i, mugridi, taugrid, param, var_epsilon, R2p, loglikdivide, sharptree, varmu, varlntau, meanlntau, dofmu, doflntau, depth));
+    rcpp_result_gen = Rcpp::wrap(fitbeta_cpp(r, G, var_epsilon, param, infeaturesfit, mu, tau, dichotomous_i));
     return rcpp_result_gen;
 END_RCPP
 }
 // loopfeatures_cpp
-NumericMatrix loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, NumericMatrix x, NumericVector ifit, LogicalVector infeatures, NumericMatrix mugrid, LogicalVector dichotomous, NumericVector taugrid, List param, double var_epsilon);
+NumericMatrix loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::MatrixXd x, NumericVector ifit, LogicalVector infeatures, Eigen::MatrixXd mugrid, LogicalVector dichotomous, NumericVector taugrid, List param, double var_epsilon);
 RcppExport SEXP _SMARTboost_loopfeatures_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xSEXP, SEXP ifitSEXP, SEXP infeaturesSEXP, SEXP mugridSEXP, SEXP dichotomousSEXP, SEXP taugridSEXP, SEXP paramSEXP, SEXP var_epsilonSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -138,10 +68,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::VectorXd >::type r(rSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXd >::type h(hSEXP);
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type x(xSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ifit(ifitSEXP);
     Rcpp::traits::input_parameter< LogicalVector >::type infeatures(infeaturesSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type mugrid(mugridSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type mugrid(mugridSEXP);
     Rcpp::traits::input_parameter< LogicalVector >::type dichotomous(dichotomousSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type taugrid(taugridSEXP);
     Rcpp::traits::input_parameter< List >::type param(paramSEXP);
@@ -154,9 +84,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_SMARTboost_sigmoidf_cpp", (DL_FUNC) &_SMARTboost_sigmoidf_cpp, 5},
     {"_SMARTboost_updateG_allocated_cpp", (DL_FUNC) &_SMARTboost_updateG_allocated_cpp, 3},
-    {"_SMARTboost_fitbeta_cpp", (DL_FUNC) &_SMARTboost_fitbeta_cpp, 18},
-    {"_SMARTboost_Gfitbeta_cpp", (DL_FUNC) &_SMARTboost_Gfitbeta_cpp, 20},
-    {"_SMARTboost_add_depth_cpp", (DL_FUNC) &_SMARTboost_add_depth_cpp, 20},
+    {"_SMARTboost_fitbeta_cpp", (DL_FUNC) &_SMARTboost_fitbeta_cpp, 8},
     {"_SMARTboost_loopfeatures_cpp", (DL_FUNC) &_SMARTboost_loopfeatures_cpp, 11},
     {NULL, NULL, 0}
 };

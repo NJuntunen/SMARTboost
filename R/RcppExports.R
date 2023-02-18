@@ -9,16 +9,8 @@ updateG_allocated_cpp <- function(G0, g, G) {
     .Call(`_SMARTboost_updateG_allocated_cpp`, G0, g, G)
 }
 
-fitbeta_cpp <- function(r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i, R2p, loglikdivide, sharptree, varmu, varlntau, meanlntau, dofmu, doflntau, depth) {
-    .Call(`_SMARTboost_fitbeta_cpp`, r, G, var_epsilon, param, infeaturesfit, dichotomous, mu, tau, dichotomous_i, R2p, loglikdivide, sharptree, varmu, varlntau, meanlntau, dofmu, doflntau, depth)
-}
-
-Gfitbeta_cpp <- function(r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G, R2p, loglikdivide, sharptree, varmu, dofmu, varlntau, meanlntau, doflntau, depth) {
-    .Call(`_SMARTboost_Gfitbeta_cpp`, r, h, G0, xi, param, var_epsilon, infeaturesfit, dichotomous, muLogTau, dichotomous_i, G, R2p, loglikdivide, sharptree, varmu, dofmu, varlntau, meanlntau, doflntau, depth)
-}
-
-add_depth_cpp <- function(r, h, G0, xi, infeaturesfit, dichotomous, dichotomous_i, mugridi, taugrid, param, var_epsilon, R2p, loglikdivide, sharptree, varmu, varlntau, meanlntau, dofmu, doflntau, depth) {
-    .Call(`_SMARTboost_add_depth_cpp`, r, h, G0, xi, infeaturesfit, dichotomous, dichotomous_i, mugridi, taugrid, param, var_epsilon, R2p, loglikdivide, sharptree, varmu, varlntau, meanlntau, dofmu, doflntau, depth)
+fitbeta_cpp <- function(r, G, var_epsilon, param, infeaturesfit, mu, tau, dichotomous_i) {
+    .Call(`_SMARTboost_fitbeta_cpp`, r, G, var_epsilon, param, infeaturesfit, mu, tau, dichotomous_i)
 }
 
 loopfeatures_cpp <- function(r, h, G0, x, ifit, infeatures, mugrid, dichotomous, taugrid, param, var_epsilon) {
