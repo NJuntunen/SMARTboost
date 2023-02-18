@@ -1,7 +1,4 @@
 CXX_STD = CXX11
-# We also need importFrom(RcppParallel,RcppParallelLibs) in NAMESPACE
 PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
 PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppThread::LdFlags()")
-#PKG_CXXFLAGS += -fopenmp -std=c++11
-#PKG_LIBS += -fopenmp
 

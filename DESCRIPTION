@@ -22,7 +22,6 @@ Suggests:
     recipes
 LinkingTo: 
     Rcpp,
-    RcppArmadillo,
-    RcppEigen,
     RcppParallel,
     RcppThread
+SystemRequirements: GNU make

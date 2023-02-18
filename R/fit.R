@@ -330,7 +330,9 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     # variable selection
 
     if (param$subsamplesharevs == 1) {
-      outputarray <- loopfeatures_cpp(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
+      for(i in 1:100){
+        outputarray <- loopfeatures_cpp(r, h, G0, x, ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
+      }
     } else { # Variable selection using a random sub-set of the sample. All the sample is then used in refinement.
       if (length(h) == 1) {
         outputarray <- loopfeatures(r[ssi], h[ssi], G0[ssi,], x[ssi,], ifit, infeaturesfit, mugrid, dichotomous, taugrid, param, var_epsilon) # loops over all variables
