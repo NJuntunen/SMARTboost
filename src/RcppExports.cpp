@@ -12,23 +12,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// fitbeta_cpp
-FitBetaStruct fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, SMARTParamStruct SMARTparams, double mu, double tau, bool dichotomous_i);
-RcppExport SEXP _SMARTboost_fitbeta_cpp(SEXP rSEXP, SEXP GSEXP, SEXP var_epsilonSEXP, SEXP SMARTparamsSEXP, SEXP muSEXP, SEXP tauSEXP, SEXP dichotomous_iSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type r(rSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G(GSEXP);
-    Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
-    Rcpp::traits::input_parameter< SMARTParamStruct >::type SMARTparams(SMARTparamsSEXP);
-    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
-    Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
-    rcpp_result_gen = Rcpp::wrap(fitbeta_cpp(r, G, var_epsilon, SMARTparams, mu, tau, dichotomous_i));
-    return rcpp_result_gen;
-END_RCPP
-}
 // loopfeatures_cpp
 Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::MatrixXd x, Eigen::MatrixXd mugrid, Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid, List param, const double var_epsilon);
 RcppExport SEXP _SMARTboost_loopfeatures_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xSEXP, SEXP mugridSEXP, SEXP dichotomousSEXP, SEXP taugridSEXP, SEXP paramSEXP, SEXP var_epsilonSEXP) {
@@ -50,7 +33,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_SMARTboost_fitbeta_cpp", (DL_FUNC) &_SMARTboost_fitbeta_cpp, 7},
     {"_SMARTboost_loopfeatures_cpp", (DL_FUNC) &_SMARTboost_loopfeatures_cpp, 9},
     {NULL, NULL, 0}
 };

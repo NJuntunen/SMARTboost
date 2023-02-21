@@ -118,13 +118,12 @@ double logpdft(double x, double m, double s, double v) {
 double lnptau(double tau, double meanlntau, double varlntau, double doflntau, int depth) {
   double s = sqrt(varlntau / depth);
   double logpdf_tau = logpdft(log(tau), meanlntau, s, doflntau);
-  double lnp_tau = logpdf_tau;
-  return lnp_tau;
+  // double lnp_tau = logpdf_tau;
+  return logpdf_tau;
 }
 
 
 // define the main function
-// [[Rcpp::export]]
 FitBetaStruct fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, SMARTParamStruct SMARTparams, double mu, double tau, bool dichotomous_i) {
 
   Eigen::VectorXd diagGGh = G.colwise().squaredNorm();
@@ -152,9 +151,6 @@ FitBetaStruct fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsil
     GGh_var_r_Pb_I_p = GGh + var_r * SMARTparams.loglikdivide * Pb * I_p;
     solver.compute(GGh_var_r_Pb_I_p);
     beta = solver.solve(G.transpose() * r);
-  }
-  if (solver.info() != Eigen::Success) {
-    Rcout << "Warning: solver did not converge\n";
   }
 
   Eigen::VectorXd Gbeta = G * beta;
@@ -279,10 +275,7 @@ std::vector<double> add_depth_cpp(const Eigen::VectorXd x, const Eigen::VectorXd
     }
   }
 
-  loss = 10;
-  tau = 10;
-  mu = 10;
-  result[0] = lossmatrix(0,1);
+  result[0] = loss;
   result[1] = tau;
   result[2] = mu;
 
@@ -302,6 +295,7 @@ SMARTParamStruct SMARTparams;
 SMARTparams.randomizecv = as<bool>(param["randomizecv"]);
 SMARTparams.ncores = as<int>(param["ncores"]);
 SMARTparams.lambda = as<double>(param["lambda"]);
+SMARTparams.depth = as<int>(param["depth"]);
 SMARTparams.sigmoid = as<String>(param["sigmoid"]);
 SMARTparams.meanlntau = as<double>(param["meanlntau"]);
 SMARTparams.varlntau = as<double>(param["varlntau"]);
