@@ -58,7 +58,7 @@ double lnpmu(double mu, double varmu, double dofmu) {
 // m: mean
 // s: standard deviation
 // v: degrees of freedom
-NumericVector logpdft(NumericVector x, double m, double s, double v) {
+NumericVector logpdft(Eigen::VectorXd x, double m, double s, double v) {
   double constant = -0.5723649429247001 + lgamma((v + 1) / 2) - lgamma(v / 2) - 0.5 * log(v);
   NumericVector z = (x - m) / s;
   NumericVector logpdfz = constant - 0.5 * (1 + v) * log(1 + pow(z, 2) / v);
