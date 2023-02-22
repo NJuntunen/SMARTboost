@@ -348,12 +348,12 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
     # refine optimization, after variable selection
     if (param$subsamplesharevs < 1 && param$subsamplefinalbeta == TRUE) {
       if (length(h) == 1) {
-        loss <- refineOptim(r[ssi], h[ssi], G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon,cl)
+        loss <- refineOptim(r[ssi], h[ssi], G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
       } else {
-        loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon,cl)
+        loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
       }
     } else {
-      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon,cl)
+      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
     }
     tau <- loss$tau
     mu <- loss$mu

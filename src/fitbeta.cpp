@@ -9,53 +9,11 @@
 #include <RcppEigen.h>
 #include <RcppThread.h>
 #include <cmath>
+#include "structures.h"
 
 
 using namespace Rcpp;
 // using namespace RcppParallel;
-
-
-// Define the struct for the parameters
-struct SMARTParamStruct {
-  std::string loss;
-  double coeff;
-  std::string verbose;
-  bool randomizecv;
-  int ncores;
-  double sharevalidation;
-  double stderulestop;
-  bool stopwhenlossup;
-  double lambda;
-  int depth;
-  std::string sigmoid;
-  double meanlntau;
-  double varlntau;
-  double doflntau;
-  double varmu;
-  double dofmu;
-  double subsamplesharevs;
-  bool subsamplefinalbeta;
-  double subsampleshare_columns;
-  double mugridpoints;
-  double taugridpoints;
-  bool refineOptimGrid;
-  double xtolOptim;
-  bool optimizevs;
-  bool sharptree;
-  int ntrees;
-  double R2p;
-  double p0;
-  double loglikdivide;
-  double overlap;
-};
-
-struct FitBetaStruct {
-  double loss;
-  Eigen::VectorXd Gbeta;
-  Eigen::VectorXd beta;
-
-};
-
 
 // sigmoidf function
 Eigen::VectorXd sigmoidf_cpp(Eigen::VectorXd x, double mu, double tau, std::string sigmoid, bool dichotomous) {
@@ -220,7 +178,7 @@ std::vector<double> add_depth_cpp(const Eigen::VectorXd x, const Eigen::VectorXd
   Eigen::MatrixXd G(n, 2*p);
   std::vector<double> muLogTau(2);
 
-  lossmatrix.fill(100000);
+  lossmatrix.fill(std::numeric_limits<double>::infinity());
 
   double loss;
   double tau;
@@ -288,8 +246,6 @@ Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Ma
                         Eigen::MatrixXd x, Eigen::MatrixXd mugrid, Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid,
                                List param, const double var_epsilon) {
 
-
-
 //Defining parameters
 SMARTParamStruct SMARTparams;
 SMARTparams.randomizecv = as<bool>(param["randomizecv"]);
@@ -354,11 +310,6 @@ SMARTparams.overlap = as<double>(param["overlap"]);
   return output;
 
 }
-
-
-
-
-
 
 
 
