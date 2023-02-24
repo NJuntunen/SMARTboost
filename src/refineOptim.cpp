@@ -50,18 +50,19 @@ double objective_function(const std::vector<double> &x, std::vector<double> &gra
   bool &dichotomous_i = obj_data -> dichotomous_i;
   Eigen::MatrixXd &G = obj_data -> G;
 
-  // double result = Gfitbeta2_cpp(r, h, G0, xi, SMARTparams, var_epsilon, x,  tau, dichotomous_i, G);
+  double result = Gfitbeta2_cpp(r, h, G0, xi, SMARTparams, var_epsilon, x,  tau, dichotomous_i, G);
 
-  return 10;
+  return result;
 }
 
-std::vector<double> optimize_mutau (Eigen::VectorXd r,Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
-                       SMARTParamStruct SMARTparams, double var_epsilon, Eigen::VectorXd dichotomous,double tau, bool dichotomous_i,double mu0) {
+std::vector<double> optimize_mutau_cpp (Eigen::VectorXd r,Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
+                       SMARTParamStruct SMARTparams, double var_epsilon ,double tau, bool dichotomous_i,double mu0) {
 
-  std::vector<double> result;
+  std::vector<double> res(2);
   const int n = G0.rows();
   const int p = G0.cols();
   Eigen::MatrixXd G(n, 2*p);
+  double xtol_rel = SMARTparams.xtolOptim/(1+tau);
 
   RefineOptimData obj_data;
   obj_data.r = r;
@@ -73,31 +74,33 @@ std::vector<double> optimize_mutau (Eigen::VectorXd r,Eigen::VectorXd h, Eigen::
   obj_data.dichotomous_i = dichotomous_i;
   obj_data.tau = tau;
 
-  nlopt::opt opt(nlopt::LD_LBFGS ,1);
-  opt.set_min_objective(objective_function, NULL);
+  nlopt::opt opt(nlopt::LD_MMA,1);
+  opt.set_min_objective(objective_function, &obj_data);
   opt.set_maxeval(100);
-  opt.set_xtol_rel(SMARTparams.xtolOptim/(1+tau));
+  opt.set_xtol_rel(xtol_rel);
   std::vector<double> x(1);
   x[0] = mu0;
   double minf;
 
   try{
     nlopt::result result = opt.optimize(x, minf);
-    std::cout << "found minimum at f(" << x[0] << "," << x[1] << ") = "
-              << std::setprecision(10) << minf << std::endl;
-  }
-  catch(std::exception &e) {
+  }catch(std::exception &e) {
     std::cout << "nlopt failed: " << e.what() << std::endl;
   }
+  std::cout << "opt done" << std::endl;
 
-  result[0] = minf;
-  result[1] = x[0];
+  res[0] = minf;
+  res[1] = x[0];
+  // double result = Gfitbeta2_cpp(r, h, G0, xi, SMARTparams, var_epsilon, x,  tau, dichotomous_i, G);
+  // res[0] = result;
+  // res[1] = 8;
 
-  return result;
+
+  return res;
 }
 
 
-
+// [[Rcpp::export]]
 Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
                                 Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i,double tau0,List param, double var_epsilon) {
 
@@ -125,7 +128,7 @@ Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Mat
 
   std::vector<double> result(3);
   std::vector<double> taugrid;
-  Eigen::MatrixXd output(taugrid.size(), 2);
+  Eigen::MatrixXd output(7,2);
 
 
   if (dichotomous_i) {
@@ -140,7 +143,7 @@ Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Mat
   } else {
     if (SMARTparams.sharptree) {
 
-      taugrid[0] = tau0;
+      taugrid.push_back(tau0);
 
     } else if (SMARTparams.taugridpoints == 1) {
 
@@ -186,13 +189,22 @@ Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Mat
         }
       }
     }
+    std::cout << taugrid.size() << std::endl;
+    int loops = taugrid.size();
+    std::vector<double> res(2);
     //RcppThread::parallelFor(0, taugrid.size(), [&](int i) {
-    for (int j = 0; j < taugrid.size(); j++) {
+    for (int j = 0; j < loops; j++) {
 
-      std::vector<double> res = optimize_mutau(r,h,G0,xi,SMARTparams,var_epsilon,dichotomous,taugrid[j],dichotomous_i,mu0);
+      double tau = taugrid[j];
+
+      res = optimize_mutau_cpp(r,h,G0,xi,SMARTparams,var_epsilon,tau,dichotomous_i,mu0);
 
       output(j,0) = res[0];
       output(j,1) = res[1];
+
+      // output(j,0) = 10;
+      // output(j,1) = 10;
+      std::cout << j << std::endl;
 
     }
 

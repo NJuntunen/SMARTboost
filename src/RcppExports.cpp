@@ -31,9 +31,41 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// nlopt_example
+Rcpp::List nlopt_example();
+RcppExport SEXP _SMARTboost_nlopt_example() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(nlopt_example());
+    return rcpp_result_gen;
+END_RCPP
+}
+// refineOptim_cpp
+Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi, Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i, double tau0, List param, double var_epsilon);
+RcppExport SEXP _SMARTboost_refineOptim_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP dichotomousSEXP, SEXP mu0SEXP, SEXP dichotomous_iSEXP, SEXP tau0SEXP, SEXP paramSEXP, SEXP var_epsilonSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type r(rSEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type h(hSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type G0(G0SEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type dichotomous(dichotomousSEXP);
+    Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
+    Rcpp::traits::input_parameter< double >::type tau0(tau0SEXP);
+    Rcpp::traits::input_parameter< List >::type param(paramSEXP);
+    Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
+    rcpp_result_gen = Rcpp::wrap(refineOptim_cpp(r, h, G0, xi, dichotomous, mu0, dichotomous_i, tau0, param, var_epsilon));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_SMARTboost_loopfeatures_cpp", (DL_FUNC) &_SMARTboost_loopfeatures_cpp, 9},
+    {"_SMARTboost_nlopt_example", (DL_FUNC) &_SMARTboost_nlopt_example, 0},
+    {"_SMARTboost_refineOptim_cpp", (DL_FUNC) &_SMARTboost_refineOptim_cpp, 10},
     {NULL, NULL, 0}
 };
 

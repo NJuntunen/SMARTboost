@@ -5,3 +5,11 @@ loopfeatures_cpp <- function(r, h, G0, x, mugrid, dichotomous, taugrid, param, v
     .Call(`_SMARTboost_loopfeatures_cpp`, r, h, G0, x, mugrid, dichotomous, taugrid, param, var_epsilon)
 }
 
+nlopt_example <- function() {
+    .Call(`_SMARTboost_nlopt_example`)
+}
+
+refineOptim_cpp <- function(r, h, G0, xi, dichotomous, mu0, dichotomous_i, tau0, param, var_epsilon) {
+    .Call(`_SMARTboost_refineOptim_cpp`, r, h, G0, xi, dichotomous, mu0, dichotomous_i, tau0, param, var_epsilon)
+}
+

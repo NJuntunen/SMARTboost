@@ -353,7 +353,7 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
         loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
       }
     } else {
-      loss <- refineOptim(r, h, G0, x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
+      loss <- refineOptim_cpp(r, h, G0, x[ssi, i], dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
     }
     tau <- loss$tau
     mu <- loss$mu
