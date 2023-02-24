@@ -6,6 +6,24 @@
     "configurations": [
         
         {
+            "name": "(lldb) Launch",
+            "type": "lldb",
+            "request": "launch",
+            "program": "C:/Users/Nikki/R/R-4.2.1/bin/R.exe",
+            "args": [
+                "--vanilla",
+                "-e",
+                "source(paste0(.libPaths()[1],'SMARTboost','tools/debug.R'),sep = '/')"
+            ],
+            "env": {
+              "R_HOME": "C:/Users/Nikki/R/R-4.2.1"  
+            },
+            "terminal": "console",
+            "stopOnEntry": false
+
+        },
+        
+        {
             "type": "R-Debugger",
             "name": "Launch R-Workspace",
             "request": "launch",

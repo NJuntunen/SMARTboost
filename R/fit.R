@@ -353,11 +353,14 @@ fit_one_tree <- function(r, h, x, infeatures, mugrid, dichotomous, taugrid, para
         loss <- refineOptim(r[ssi], h, G0[ssi,], x[ssi, i], infeaturesfit, dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
       }
     } else {
+
       loss <- refineOptim_cpp(r, h, G0, x[ssi, i], dichotomous, mu0, dichotomous[i], tau0, param, var_epsilon)
+
     }
-    tau <- loss$tau
-    mu <- loss$mu
-    loss <- loss$loss
+
+    tau <- loss[2]
+    mu <- loss[3]
+    loss <- loss[1]
 
     gL <- sigmoidf_cpp(x[, i], mu, tau, param$sigmoid, dichotomous = dichotomous[i])
     G <- updateG_allocated_cpp(G0, gL, matrix(NA, n, 2^depth))

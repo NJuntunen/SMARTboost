@@ -15,12 +15,16 @@ using namespace Rcpp;
 
 // Gfitbeta function
 double Gfitbeta2_cpp(const Eigen::VectorXd r, const Eigen::VectorXd h, const Eigen::MatrixXd G0, const Eigen::VectorXd xi, SMARTParamStruct SMARTparams,
-                    const double var_epsilon, const std::vector<double> muv, double tau,
-                    const bool dichotomous_i, Eigen::MatrixXd G) {
+                    const double var_epsilon, const double muv, double tau,
+                    const bool dichotomous_i) {
+
+  const int n = G0.rows();
+  const int p = G0.cols();
+  Eigen::MatrixXd G(n, 2*p);
 
   Eigen::VectorXd gL(xi.size());
 
-  double mu = muv[1];
+  double mu = muv;
 
   tau = std::max(tau, 0.2);
 
@@ -48,11 +52,8 @@ double objective_function(const std::vector<double> &x, std::vector<double> &gra
   double &var_epsilon = obj_data -> var_epsilon;
   double &tau = obj_data -> tau;
   bool &dichotomous_i = obj_data -> dichotomous_i;
-  Eigen::MatrixXd &G = obj_data -> G;
 
-  double result = Gfitbeta2_cpp(r, h, G0, xi, SMARTparams, var_epsilon, x,  tau, dichotomous_i, G);
-
-  return result;
+  return Gfitbeta2_cpp(r, h, G0, xi, SMARTparams, var_epsilon, x[0],  tau, dichotomous_i);
 }
 
 std::vector<double> optimize_mutau_cpp (Eigen::VectorXd r,Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
@@ -74,7 +75,7 @@ std::vector<double> optimize_mutau_cpp (Eigen::VectorXd r,Eigen::VectorXd h, Eig
   obj_data.dichotomous_i = dichotomous_i;
   obj_data.tau = tau;
 
-  nlopt::opt opt(nlopt::LD_MMA,1);
+  nlopt::opt opt(nlopt::LD_LBFGS, 1);
   opt.set_min_objective(objective_function, &obj_data);
   opt.set_maxeval(100);
   opt.set_xtol_rel(xtol_rel);
@@ -87,21 +88,16 @@ std::vector<double> optimize_mutau_cpp (Eigen::VectorXd r,Eigen::VectorXd h, Eig
   }catch(std::exception &e) {
     std::cout << "nlopt failed: " << e.what() << std::endl;
   }
-  std::cout << "opt done" << std::endl;
 
   res[0] = minf;
   res[1] = x[0];
-  // double result = Gfitbeta2_cpp(r, h, G0, xi, SMARTparams, var_epsilon, x,  tau, dichotomous_i, G);
-  // res[0] = result;
-  // res[1] = 8;
-
 
   return res;
 }
 
 
 // [[Rcpp::export]]
-Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
+std::vector<double>  refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
                                 Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i,double tau0,List param, double var_epsilon) {
 
   SMARTParamStruct SMARTparams;
@@ -129,6 +125,9 @@ Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Mat
   std::vector<double> result(3);
   std::vector<double> taugrid;
   Eigen::MatrixXd output(7,2);
+  double loss;
+  double tau;
+  double mu;
 
 
   if (dichotomous_i) {
@@ -189,34 +188,37 @@ Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Mat
         }
       }
     }
-    std::cout << taugrid.size() << std::endl;
+
     int loops = taugrid.size();
     std::vector<double> res(2);
-    //RcppThread::parallelFor(0, taugrid.size(), [&](int i) {
-    for (int j = 0; j < loops; j++) {
+    std::mutex mtx;
+    RcppThread::parallelFor(0, taugrid.size(), [&](int i) {
+    // for (int j = 0; j < loops; j++) {
 
-      double tau = taugrid[j];
+      double tau = taugrid[i];
 
       res = optimize_mutau_cpp(r,h,G0,xi,SMARTparams,var_epsilon,tau,dichotomous_i,mu0);
 
-      output(j,0) = res[0];
-      output(j,1) = res[1];
-
-      // output(j,0) = 10;
-      // output(j,1) = 10;
-      std::cout << j << std::endl;
-
-    }
-
+      mtx.lock();
+      output(i,0) = res[0];
+      output(i,1) = res[1];
+      mtx.unlock();
+    });
 
   }
-  //
-  //         minindex <- which.min(lossmatrix[,1])
-  //         loss <- lossmatrix[minindex,1]
-  //       tau <- taugrid[minindex]
-  //       mu <- lossmatrix[minindex,2]
 
-  return output;
+  int minindex;
+  double minValue = output.col(0).minCoeff(&minindex);
+
+  loss = output(minindex,0);
+  tau = taugrid[minindex];
+  mu = output(minindex,1);
+
+  result[0] = loss;
+  result[1] = tau;
+  result[2] = mu;
+
+  return result;
 }
 
 

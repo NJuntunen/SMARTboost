@@ -42,7 +42,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // refineOptim_cpp
-Eigen::MatrixXd refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi, Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i, double tau0, List param, double var_epsilon);
+std::vector<double> refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi, Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i, double tau0, List param, double var_epsilon);
 RcppExport SEXP _SMARTboost_refineOptim_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP dichotomousSEXP, SEXP mu0SEXP, SEXP dichotomous_iSEXP, SEXP tau0SEXP, SEXP paramSEXP, SEXP var_epsilonSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
