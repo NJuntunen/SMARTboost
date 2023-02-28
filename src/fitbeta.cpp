@@ -244,29 +244,7 @@ std::vector<double> add_depth_cpp(const Eigen::VectorXd x, const Eigen::VectorXd
 // [[Rcpp::export]]
 Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0,
                         Eigen::MatrixXd x, Eigen::MatrixXd mugrid, Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid,
-                               List param, const double var_epsilon) {
-
-//Defining parameters
-SMARTParamStruct SMARTparams;
-SMARTparams.randomizecv = as<bool>(param["randomizecv"]);
-SMARTparams.ncores = as<int>(param["ncores"]);
-SMARTparams.lambda = as<double>(param["lambda"]);
-SMARTparams.depth = as<int>(param["depth"]);
-SMARTparams.sigmoid = as<String>(param["sigmoid"]);
-SMARTparams.meanlntau = as<double>(param["meanlntau"]);
-SMARTparams.varlntau = as<double>(param["varlntau"]);
-SMARTparams.doflntau = as<double>(param["doflntau"]);
-SMARTparams.varmu = as<double>(param["varmu"]);
-SMARTparams.dofmu = as<double>(param["dofmu"]);
-SMARTparams.subsamplesharevs = as<double>(param["subsamplesharevs"]);
-SMARTparams.subsampleshare_columns = as<double>(param["subsampleshare_columns"]);
-SMARTparams.xtolOptim = as<double>(param["xtolOptim"]);
-SMARTparams.optimizevs = as<bool>(param["optimizevs"]);
-SMARTparams.sharptree = as<bool>(param["sharptree"]);
-SMARTparams.R2p = as<double>(param["R2p"]);
-SMARTparams.p0 = as<double>(param["p0"]);
-SMARTparams.loglikdivide = as<double>(param["loglikdivide"]);
-SMARTparams.overlap = as<double>(param["overlap"]);
+                        SMARTParamStruct SMARTparams, const double var_epsilon) {
 
   int p = x.cols();
 //   // std::cout << "The value of x is: " << p << std::endl;

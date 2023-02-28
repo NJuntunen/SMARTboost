@@ -13,8 +13,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // loopfeatures_cpp
-Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::MatrixXd x, Eigen::MatrixXd mugrid, Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid, List param, const double var_epsilon);
-RcppExport SEXP _SMARTboost_loopfeatures_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xSEXP, SEXP mugridSEXP, SEXP dichotomousSEXP, SEXP taugridSEXP, SEXP paramSEXP, SEXP var_epsilonSEXP) {
+Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::MatrixXd x, Eigen::MatrixXd mugrid, Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid, SMARTParamStruct SMARTparams, const double var_epsilon);
+RcppExport SEXP _SMARTboost_loopfeatures_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xSEXP, SEXP mugridSEXP, SEXP dichotomousSEXP, SEXP taugridSEXP, SEXP SMARTparamsSEXP, SEXP var_epsilonSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,9 +25,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type mugrid(mugridSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXd >::type dichotomous(dichotomousSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXd >::type taugrid(taugridSEXP);
-    Rcpp::traits::input_parameter< List >::type param(paramSEXP);
+    Rcpp::traits::input_parameter< SMARTParamStruct >::type SMARTparams(SMARTparamsSEXP);
     Rcpp::traits::input_parameter< const double >::type var_epsilon(var_epsilonSEXP);
-    rcpp_result_gen = Rcpp::wrap(loopfeatures_cpp(r, h, G0, x, mugrid, dichotomous, taugrid, param, var_epsilon));
+    rcpp_result_gen = Rcpp::wrap(loopfeatures_cpp(r, h, G0, x, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -42,8 +42,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // refineOptim_cpp
-std::vector<double> refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi, Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i, double tau0, List param, double var_epsilon);
-RcppExport SEXP _SMARTboost_refineOptim_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP dichotomousSEXP, SEXP mu0SEXP, SEXP dichotomous_iSEXP, SEXP tau0SEXP, SEXP paramSEXP, SEXP var_epsilonSEXP) {
+std::vector<double> refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi, Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i, double tau0, SMARTParamStruct SMARTparams, double var_epsilon);
+RcppExport SEXP _SMARTboost_refineOptim_cpp(SEXP rSEXP, SEXP hSEXP, SEXP G0SEXP, SEXP xiSEXP, SEXP dichotomousSEXP, SEXP mu0SEXP, SEXP dichotomous_iSEXP, SEXP tau0SEXP, SEXP SMARTparamsSEXP, SEXP var_epsilonSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -55,9 +55,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
     Rcpp::traits::input_parameter< bool >::type dichotomous_i(dichotomous_iSEXP);
     Rcpp::traits::input_parameter< double >::type tau0(tau0SEXP);
-    Rcpp::traits::input_parameter< List >::type param(paramSEXP);
+    Rcpp::traits::input_parameter< SMARTParamStruct >::type SMARTparams(SMARTparamsSEXP);
     Rcpp::traits::input_parameter< double >::type var_epsilon(var_epsilonSEXP);
-    rcpp_result_gen = Rcpp::wrap(refineOptim_cpp(r, h, G0, xi, dichotomous, mu0, dichotomous_i, tau0, param, var_epsilon));
+    rcpp_result_gen = Rcpp::wrap(refineOptim_cpp(r, h, G0, xi, dichotomous, mu0, dichotomous_i, tau0, SMARTparams, var_epsilon));
     return rcpp_result_gen;
 END_RCPP
 }
