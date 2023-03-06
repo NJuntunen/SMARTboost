@@ -13,7 +13,7 @@
 
 using namespace Rcpp;
 
-
+// [[Rcpp::export]]
 List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, Eigen::MatrixXd mugrid,
                       Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid, List param) {
 
@@ -31,6 +31,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
   SMARTparams.dofmu = as<double>(param["dofmu"]);
   SMARTparams.subsamplesharevs = as<double>(param["subsamplesharevs"]);
   SMARTparams.subsampleshare_columns = as<double>(param["subsampleshare_columns"]);
+  SMARTparams.subsamplefinalbeta = as<bool>(param["subsamplefinalbeta"]);
   SMARTparams.xtolOptim = as<double>(param["xtolOptim"]);
   SMARTparams.optimizevs = as<bool>(param["optimizevs"]);
   SMARTparams.sharptree = as<bool>(param["sharptree"]);
@@ -77,21 +78,30 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
   }
 
   for(int depth = 0; depth < SMARTparams.depth; depth++){
-    Eigen::MatrixXd outputarray;
+
+    int cols = p;
+    if (SMARTparams.subsampleshare_columns < 1) {
+      int psmall = round(p * SMARTparams.subsampleshare_columns);
+      cols = psmall;
+    }
+
+    Eigen::MatrixXd outputarray(cols, 3);
+
     if(SMARTparams.subsamplesharevs == 1){
 
-      Eigen::MatrixXd outputarray = loopfeatures_cpp(r, h, G0, x, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon);
+      outputarray = loopfeatures_cpp(r, h, G0, x, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon);
 
     }else { //Variable selection using a random sub-set of the sample. All the sample is then used in refinement.
       if (h.size() == 1){
 
         Eigen::VectorXi ssi_indices = Eigen::Map<Eigen::VectorXi>(ssi.begin(), ssi.size());
+
         Eigen::VectorXd r_subsampled = r.segment(ssi_indices.minCoeff() - 1, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1);
         Eigen::VectorXd h_subsampled = h.segment(ssi_indices.minCoeff() - 1, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1);
         Eigen::MatrixXd G0_subsampled = G0.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, G0.cols());
         Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, x.cols());
 
-        Eigen::MatrixXd outputarray = loopfeatures_cpp(r_subsampled, h_subsampled, G0_subsampled, x_subsampled, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon); // loops over all variables
+        outputarray = loopfeatures_cpp(r_subsampled, h_subsampled, G0_subsampled, x_subsampled, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon); // loops over all variables
       }else {
 
         Eigen::VectorXi ssi_indices = Eigen::Map<Eigen::VectorXi>(ssi.begin(), ssi.size());
@@ -99,7 +109,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
         Eigen::MatrixXd G0_subsampled = G0.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, G0.cols());
         Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, x.cols());
 
-        Eigen::MatrixXd outputarray = loopfeatures_cpp(r_subsampled, h, G0_subsampled, x_subsampled, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon);
+        outputarray = loopfeatures_cpp(r_subsampled, h, G0_subsampled, x_subsampled, mugrid, dichotomous, taugrid, SMARTparams, var_epsilon);
       }
     }
 
@@ -107,43 +117,55 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     double tau0 = outputarray(i, 1);
     double mu0 = outputarray(i, 2);
     std::vector<double> opt_result(3);
+
+    std::cout << "start optim " << std::endl;
     if (SMARTparams.subsamplesharevs < 1 && SMARTparams.subsamplefinalbeta == true) {
       if (h.size() == 1) {
+        std::cout << "opt 1" << std::endl;
         Eigen::VectorXi ssi_indices = Eigen::Map<Eigen::VectorXi>(ssi.begin(), ssi.size());
         Eigen::VectorXd r_subsampled = r.segment(ssi_indices.minCoeff() - 1, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1);
         Eigen::VectorXd h_subsampled = h.segment(ssi_indices.minCoeff() - 1, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1);
         Eigen::MatrixXd G0_subsampled = G0.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, G0.cols());
-        Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, i);
+        Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, i, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, 1);
 
         opt_result = refineOptim_cpp(r_subsampled, h_subsampled, G0_subsampled, x_subsampled, dichotomous, mu0, dichotomous[i], tau0, SMARTparams, var_epsilon);
       } else {
-
+        std::cout << "opt 2" << std::endl;
         Eigen::VectorXi ssi_indices = Eigen::Map<Eigen::VectorXi>(ssi.begin(), ssi.size());
         Eigen::VectorXd r_subsampled = r.segment(ssi_indices.minCoeff() - 1, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1);
         Eigen::MatrixXd G0_subsampled = G0.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, G0.cols());
-        Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, i);
+        Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, i, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, 1);
 
         opt_result = refineOptim_cpp(r_subsampled, h, G0_subsampled, x_subsampled, dichotomous, mu0, dichotomous[i], tau0, SMARTparams, var_epsilon);
       }
     } else {
 
-      Eigen::VectorXi ssi_indices = Eigen::Map<Eigen::VectorXi>(ssi.begin(), ssi.size());
-      Eigen::VectorXd r_subsampled = r.segment(ssi_indices.minCoeff() - 1, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1);
-      Eigen::MatrixXd G0_subsampled = G0.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, G0.cols());
-      Eigen::MatrixXd x_subsampled = x.block(ssi_indices.minCoeff() - 1, 0, ssi_indices.maxCoeff() - ssi_indices.minCoeff() + 1, i);
+      Eigen::VectorXd xi = x.col(i);
 
-      opt_result = refineOptim_cpp(r, h, G0, x_subsampled, dichotomous, mu0, dichotomous[i], tau0, SMARTparams, var_epsilon);
+      opt_result = refineOptim_cpp(r, h, G0, xi, dichotomous, mu0, dichotomous[i], tau0, SMARTparams, var_epsilon);
 
     }
-
+    std::cout << "optim done " << std::endl;
     double loss = opt_result[0];
     double tau = opt_result[1];
     double mu = opt_result[2];
 
     Eigen::VectorXd gL;
-    Eigen::MatrixXd G(n, 2^depth);
+    Eigen::MatrixXd G(n, 2^(depth+1));
     gL = sigmoidf_cpp(x.col(i), mu, tau, SMARTparams.sigmoid, dichotomous[i]);
-    G = updateG_allocated_cpp(G0, gL, G);
+    std::cout << "sigmoid done " << std::endl;
+
+    try {
+      // code that may potentially cause an error
+      G = updateG_allocated_cpp(G0, gL, G);
+    } catch (std::exception& e) {
+      // handle the error and return an error message
+      Rcout << "Error: " << e.what() << std::endl;
+      break;
+    }
+
+
+    std::cout << "G done " << std::endl;
 
     FitBetaStruct FitBeta;
     Eigen::VectorXd yfit;
@@ -153,6 +175,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     yfit = FitBeta.Gbeta;
     beta = FitBeta.beta;
     loss = FitBeta.loss;
+    std::cout << "fitbeta done " << std::endl;
 
     fi2[depth] = (pow(yfit.array(),2).sum() - pow(yfit0.array(),2).sum()) / n;
 
@@ -160,11 +183,13 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     loss0 = loss;
     yfit0 = yfit;
     ifit.conservativeResize(1);
-    ifit.coeffRef(ifit.size()) = i;
+    std::cout << "ifit size: " << ifit.size() << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    ifit(ifit.size()-1) = i;
     mufit.conservativeResize(1);
-    mufit.coeffRef(mufit.size()) = mu;
+    mufit(mufit.size()-1) = mu;
     taufit.conservativeResize(1);
-    taufit.coeffRef(taufit.size()) = tau;
+    taufit(taufit.size()-1) = tau;
     betafit = beta;
 
   }

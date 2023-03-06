@@ -95,8 +95,6 @@ std::vector<double> optimize_mutau_cpp (Eigen::VectorXd r,Eigen::VectorXd h, Eig
   return res;
 }
 
-
-// [[Rcpp::export]]
 std::vector<double>  refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0, Eigen::VectorXd xi,
                                 Eigen::VectorXd dichotomous, double mu0, bool dichotomous_i,double tau0, SMARTParamStruct SMARTparams, double var_epsilon) {
 
@@ -106,7 +104,6 @@ std::vector<double>  refineOptim_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen
   double loss;
   double tau;
   double mu;
-
 
   if (dichotomous_i) {
     Eigen::VectorXd gL = sigmoidf_cpp(xi,mu0,tau0,SMARTparams.sigmoid, dichotomous_i);

@@ -38,13 +38,19 @@ Eigen::VectorXd sigmoidf_cpp(Eigen::VectorXd x, double mu, double tau, std::stri
 // updateG_allocated function
 
 Eigen::MatrixXd updateG_allocated_cpp(Eigen::MatrixXd G0, Eigen::VectorXd g, Eigen::MatrixXd G) {
-  int n = G0.rows(), p = G0.cols();
+
+  int p = G0.cols();
   for (int i = 0; i < p; i++) {
-    for (int j = 0; j < n; j++) {
-      G(j, i) = G0(j, i) * g[j];
-      G(j, i + p) = G0(j, i) * (1 - g[j]);
-    }
+    G.col(i) = G0.col(i).array() * g.array();
+    G.col(i + (p-1)) = G0.col(i).array() * (1 - g.array());
   }
+  // int n = G0.rows(), p = G0.cols();
+  // for (int i = 0; i < p; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     G(j, i) = G0(j, i) * g[j];
+  //     G(j, i + p) = G0(j, i) * (1 - g[j]);
+  //   }
+  // }
   return G;
 }
 
@@ -154,7 +160,6 @@ double Gfitbeta_cpp(const Eigen::VectorXd r, const Eigen::VectorXd h, const Eige
 
   FitBetaStruct result = fitbeta_cpp(r, G, var_epsilon, SMARTparams, muLogTau[0], tau, dichotomous_i);
 
-
   return result.loss;
 }
 
@@ -240,11 +245,9 @@ std::vector<double> add_depth_cpp(const Eigen::VectorXd x, const Eigen::VectorXd
   return result;
 }
 
-
-// [[Rcpp::export]]
 Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd G0,
                         Eigen::MatrixXd x, Eigen::MatrixXd mugrid, Eigen::VectorXd dichotomous, Eigen::VectorXd taugrid,
-                        SMARTParamStruct SMARTparams, const double var_epsilon) {
+                        SMARTParamStruct SMARTparams, double var_epsilon) {
 
   int p = x.cols();
 //   // std::cout << "The value of x is: " << p << std::endl;
@@ -261,9 +264,11 @@ Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Ma
   }
 
   // loop through the columns in parallel
+
   int count = 0;
   Eigen::MatrixXd output(ps.size(), 3);
   std::mutex mtx;
+
   RcppThread::parallelForEach(ps, [&](int i) {
     int index = i-1;
     Eigen::VectorXd xi = x.col(index);
@@ -280,10 +285,9 @@ Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Ma
     output(current_count, 2) = result[2];
     count = count+1;
     mtx.unlock();
-
   });
 
-
+  RcppThread::wait();
 
   return output;
 
