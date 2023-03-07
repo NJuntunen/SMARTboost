@@ -127,7 +127,10 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
       }
     }
 
-    int i = (outputarray.col(0).array() == outputarray.col(0).minCoeff()).cast<int>().maxCoeff();
+    Eigen::Index i;
+    (outputarray.col(0).minCoeff(&i), i);
+
+    // int i = (outputarray.col(0).array() == outputarray.col(0).minCoeff()).cast<int>().maxCoeff();
     double tau0 = outputarray(i, 1);
     double mu0 = outputarray(i, 2);
     std::vector<double> opt_result(3);
@@ -140,10 +143,10 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
         Eigen::MatrixXd G0_subsampled(ssi.size(), G0.cols());
         Eigen::VectorXd x_subsampled(ssi.size());
         int count = 0;
-        for(int i : ssi){
+        for(int j : ssi){
 
-          r_subsampled(count) = r(i);
-          h_subsampled(count) = h(i);
+          r_subsampled(count) = r(j);
+          h_subsampled(count) = h(j);
           G0_subsampled.row(count) = G0.row(count);
           x_subsampled(count) = x(count,i);
           count = count + 1;
@@ -157,9 +160,9 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
         Eigen::MatrixXd G0_subsampled(ssi.size(), G0.cols());
         Eigen::VectorXd x_subsampled(ssi.size());
         int count = 0;
-        for(int i : ssi){
+        for(int j : ssi){
 
-          r_subsampled(count) = r(i);
+          r_subsampled(count) = r(j);
           G0_subsampled.row(count) = G0.row(count);
           x_subsampled(count) = x(count,i);
           count = count + 1;
@@ -204,7 +207,6 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     yfit0 = yfit;
     ifit.conservativeResize(ifit.size() + 1);
     ifit(ifit.size() - 1) = i;
-    std::cout << ifit << std::endl;
     mufit.conservativeResize(mufit.size() + 1);
     mufit(mufit.size() - 1) = mu;
     taufit.conservativeResize(taufit.size() + 1);

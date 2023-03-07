@@ -74,6 +74,7 @@ predict_SMARTboost_numeric <- function(model, predictors) {
     predictors <- (predictors - model$SMARTtrees$meanx)/model$SMARTtrees$stdx
     gammafit <- model$SMARTtrees$gamma0
     for(j in 1:length(model$SMARTtrees$trees)) {
+      print(j)
       tree <- model$SMARTtrees$trees[[j]]
       gammafit <- gammafit + model$SMARTtrees$param$lambda*SMARTtreebuild(predictors, tree$i, tree$mu, tree$tau, tree$beta, model$SMARTtrees$param$sigmoid)
     }
