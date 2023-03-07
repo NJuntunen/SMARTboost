@@ -15,7 +15,7 @@ SMARTrecipe <- recipes::recipe(data) %>%
 x <- SMARTrecipe
 
 tic()
-test <- SMARTboost_fit(x ~ z+y,data = diamonds, ntrees = 10, optimizevs = FALSE, ncores = 4)
+test <- SMARTboost_fit(x ~ z+y,data = diamonds, ntrees = 10, optimizevs = TRUE, ncores = 4)
 toc()
 predict(test, diamonds)
 

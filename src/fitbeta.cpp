@@ -9,7 +9,8 @@
 #include <RcppEigen.h>
 #include <RcppThread.h>
 #include <cmath>
-#include "structures.h"
+#include <nlopt.hpp>
+#include "sigmoidf_cpp.h"
 
 
 using namespace Rcpp;
@@ -40,9 +41,10 @@ Eigen::VectorXd sigmoidf_cpp(Eigen::VectorXd x, double mu, double tau, std::stri
 Eigen::MatrixXd updateG_allocated_cpp(Eigen::MatrixXd G0, Eigen::VectorXd g, Eigen::MatrixXd G) {
 
   int p = G0.cols();
+
   for (int i = 0; i < p; i++) {
     G.col(i) = G0.col(i).array() * g.array();
-    G.col(i + (p-1)) = G0.col(i).array() * (1 - g.array());
+    G.col(i + p) = G0.col(i).array() * (1 - g.array());
   }
   // int n = G0.rows(), p = G0.cols();
   // for (int i = 0; i < p; i++) {
@@ -233,7 +235,33 @@ std::vector<double> add_depth_cpp(const Eigen::VectorXd x, const Eigen::VectorXd
     // Optionally, further optimize over mu
     if(SMARTparams.optimizevs) {
 
-      //define nlopt optimization here
+      double xtol_rel = SMARTparams.xtolOptim/(1+tau);
+
+      RefineOptimData obj_data;
+      obj_data.r = r;
+      obj_data.h = h;
+      obj_data.G0 = G0;
+      obj_data.xi = x;
+      obj_data.SMARTparams = SMARTparams;
+      obj_data.var_epsilon = var_epsilon;
+      obj_data.dichotomous_i = dichotomous_i;
+      obj_data.tau = tau;
+
+      nlopt::opt opt(nlopt::LD_LBFGS, 1);
+      opt.set_min_objective(objective_function, &obj_data);
+      opt.set_maxeval(100);
+      opt.set_xtol_rel(xtol_rel);
+      std::vector<double> x(1);
+      x[0] = mu;
+      double minf;
+
+      try{
+        nlopt::result result = opt.optimize(x, minf);
+        loss = minf;
+        mu = x[0];
+      }catch(std::exception &e) {
+        std::cout << "nlopt failed: " << e.what() << std::endl;
+      }
 
     }
   }

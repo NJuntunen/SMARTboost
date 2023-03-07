@@ -397,11 +397,11 @@ SMARTtreebuild <- function(x, ij, muj, tauj, betaj, sigmoid) {
     i <- ij[d]
     mu <- muj[d]
     tau <- tauj[d]
-    gL <- sigmoidf_cpp(x[,i], mu, tau, sigmoid)
+    gL <- sigmoidf(x[,i], mu, tau, sigmoid)
     G <- updateG(G, gL)
   }
 
-  gammafit <- G * betaj[,1]
+  gammafit <- G * betaj
   return(gammafit)
 }
 

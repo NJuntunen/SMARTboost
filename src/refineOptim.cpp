@@ -62,7 +62,6 @@ std::vector<double> optimize_mutau_cpp (Eigen::VectorXd r,Eigen::VectorXd h, Eig
   std::vector<double> res(2);
   const int n = G0.rows();
   const int p = G0.cols();
-  Eigen::MatrixXd G(n, 2*p);
   double xtol_rel = SMARTparams.xtolOptim/(1+tau);
 
   RefineOptimData obj_data;
