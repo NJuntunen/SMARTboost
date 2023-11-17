@@ -77,6 +77,8 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     ssi = n_sampled;
   }
 
+  // std::cout <<"starting feat" << std::endl;
+
   for(int depth = 0; depth < SMARTparams.depth; depth++){
 
     int cols = p;
@@ -127,6 +129,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
       }
     }
 
+    // std::cout <<"feat done" << std::endl;
     Eigen::Index i;
     (outputarray.col(0).minCoeff(&i), i);
 
@@ -134,7 +137,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     double tau0 = outputarray(i, 1);
     double mu0 = outputarray(i, 2);
     std::vector<double> opt_result(3);
-
+    // std::cout <<"start optim" << std::endl;
     if (SMARTparams.subsamplesharevs < 1 && SMARTparams.subsamplefinalbeta == true) {
       if (h.size() == 1) {
 
@@ -177,7 +180,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
       opt_result = refineOptim_cpp(r, h, G0, xi, dichotomous, mu0, dichotomous[i], tau0, SMARTparams, var_epsilon);
 
     }
-
+    // std::cout <<"optim done" << std::endl;
     double loss = opt_result[0];
     double tau = opt_result[1];
     double mu = opt_result[2];
@@ -187,6 +190,7 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     Eigen::VectorXd gL(x.rows());
     Eigen::MatrixXd G(n, result);
 
+    // std::cout <<"starting last fit" << std::endl;
     gL = sigmoidf_cpp(x.col(i), mu, tau, SMARTparams.sigmoid, dichotomous[i]);
     G = updateG_allocated_cpp(G0, gL, G);
 
@@ -206,12 +210,13 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
     loss0 = loss;
     yfit0 = yfit;
     ifit.conservativeResize(ifit.size() + 1);
-    ifit(ifit.size() - 1) = i;
+    ifit(ifit.size() - 1) = i + 1;
     mufit.conservativeResize(mufit.size() + 1);
     mufit(mufit.size() - 1) = mu;
     taufit.conservativeResize(taufit.size() + 1);
     taufit(taufit.size() - 1) = tau;
     betafit = beta;
+    // std::cout <<"last fit done" << std::endl;
 
   }
 
@@ -223,7 +228,8 @@ List fit_one_tree_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::MatrixXd x, E
   retlist["taufit"] = taufit;
   retlist["betafit"] = betafit;
   retlist["fi2"] = fi2;
+  retlist["loss"] = loss0;
 
-
+  // std::cout <<"returning to R" << std::endl;
   return retlist;
 }

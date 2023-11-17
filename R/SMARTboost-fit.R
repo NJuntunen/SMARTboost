@@ -69,7 +69,7 @@ SMARTboost_fit.data.frame <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2
 
 #' @export
 #' @rdname SMARTboost_fit
-SMARTboost.matrix <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
+SMARTboost_fit.matrix <- function(x, y,depth = 4, ntrees = 100, lambda = 0.2, subsampleshare_columns = 1, ...) {
   processed <- hardhat::mold(x, y)
   SMARTboost_bridge(processed, depth, ntrees, lambda, subsampleshare_columns, ...)
 }
@@ -102,9 +102,9 @@ SMARTboost_bridge <- function(processed, depth = NULL, ntrees = NULL, lambda = N
                       lambda = lambda,
                       subsampleshare_columns = subsampleshare_columns,
                       ... = ...)
-
   predictors <- processed$predictors %>%
     as.matrix()
+
   outcomes <- processed$outcomes[[1]]
 
   date <- processed$extras$roles$date
@@ -128,13 +128,20 @@ SMARTboost_bridge <- function(processed, depth = NULL, ntrees = NULL, lambda = N
   rh <- evaluate_pseudoresid(data$y, gammafit)
   SMARTtrees <- SMARTboostTrees(param, gamma0, n, p, meanx, stdx)
 
+  param <- SMARTtrees$param
+
   for (iter in 1:param$ntrees) {
-    print(iter)
+
     out <- fit_one_tree_cpp(rh$r, rh$h, predictors,mugrid, dichotomous, taugrid, param)
 
     tree <- list(i = out$ifit, mu = out$mufit, tau = out$taufit, beta = out$betafit, fi2 = out$fi2)
     SMARTtrees <- updateSMARTtrees(SMARTtrees, out$yfit0, tree, rh, iter)
+    param <- SMARTtrees$param
     rh <- evaluate_pseudoresid(data$y, SMARTtrees$gammafit)
+
+    loss <- (data$y - SMARTtrees$gammafit)^2
+    meanloss <- sum(loss)/length(data$y)
+    print(meanloss)
   }
 
   new_SMARTboost(

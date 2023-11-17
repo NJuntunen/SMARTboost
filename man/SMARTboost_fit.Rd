@@ -4,7 +4,7 @@
 \alias{SMARTboost_fit}
 \alias{SMARTboost_fit.default}
 \alias{SMARTboost_fit.data.frame}
-\alias{SMARTboost.matrix}
+\alias{SMARTboost_fit.matrix}
 \alias{SMARTboost_fit.formula}
 \alias{SMARTboost_fit.recipe}
 \title{Fit a \code{SMARTboost}}
@@ -37,7 +37,7 @@ SMARTboost_fit(
   ...
 )
 
-SMARTboost.matrix(
+\method{SMARTboost_fit}{matrix}(
   x,
   y,
   depth = 4,

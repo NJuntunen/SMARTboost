@@ -138,9 +138,9 @@ update.SMARTboost <- function(object, parameters = NULL, depth = NULL, ntrees = 
 }
 
 
-#
-# .onLoad <- function(libname, pkgname) {
-#
-#   add_parsnip_SMARTboost()
-# }
+
+.onLoad <- function(libname, pkgname) {
+
+  add_parsnip_SMARTboost()
+}
 

@@ -26,8 +26,9 @@
 #' # Predict, with preprocessing
 #' predict(mod, test)
 #'
-#' @export
-predict.SMARTboost <- function(object, new_data, type = "numeric", ...) {
+#' @importFrom stats predict
+#' @export predict.SMARTboost_fit
+predict.SMARTboost_fit <- function(object, new_data, type = "numeric", ...) {
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_SMARTboost_predict_types())
   predict_SMARTboost_bridge(type, object, forged$predictors)

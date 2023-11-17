@@ -92,36 +92,68 @@ double lnptau(double tau, double meanlntau, double varlntau, double doflntau, in
 // define the main function
 FitBetaStruct fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsilon, SMARTParamStruct SMARTparams, double mu, double tau, bool dichotomous_i) {
 
-  Eigen::VectorXd diagGGh = G.colwise().squaredNorm();
+  // Eigen::VectorXd diagGGh = G.colwise().squaredNorm();
   Eigen::MatrixXd GGh = G.transpose() * G;
   int n = G.rows();
   int p = G.cols();
-  double var_r = var_epsilon/(1-SMARTparams.R2p);
-  double Pb = diagGGh.sum()/(n*var_r*SMARTparams.R2p);
-  Eigen::MatrixXd I_p = Eigen::MatrixXd::Identity(p,p);
-  Eigen::MatrixXd GGh_var_r_Pb_I_p = GGh + var_r*SMARTparams.loglikdivide*Pb*I_p;
-  Eigen::VectorXd beta(p);
 
-  // Use BiCGSTAB to solve the system
-  Eigen::BiCGSTAB<Eigen::MatrixXd> solver;
-  solver.compute(GGh_var_r_Pb_I_p);
-  beta = solver.solve(G.transpose() * r);
-
-
-  // Check if the solution is valid, and if not, use a larger Pb
-  // int max_iter = 5; // set a maximum number of iterations
-  // int iter = 0;
-  while (solver.info() != Eigen::Success) {
-    // iter++;
-    Pb = Pb * 2.01;
-    GGh_var_r_Pb_I_p = GGh + var_r * SMARTparams.loglikdivide * Pb * I_p;
-    solver.compute(GGh_var_r_Pb_I_p);
-    beta = solver.solve(G.transpose() * r);
+  double max_diag = GGh.diagonal().maxCoeff();
+  for (int i = 0; i < p; i++) {
+    GGh(i, i) = std::max(GGh(i, i), max_diag * 0.00001);
   }
 
-  Eigen::VectorXd Gbeta = G * beta;
-  double loglik = -0.5*(r-Gbeta).squaredNorm()/var_r/SMARTparams.loglikdivide;
-  double logpdfbeta = -0.5*(p*log(2*M_PI) - p*log(Pb) + Pb*beta.squaredNorm());
+  // double var_r = var_epsilon/(1-SMARTparams.R2p);
+  // double Pb = diagGGh.sum()/(n*var_r*SMARTparams.R2p);
+  // Eigen::MatrixXd I_p = Eigen::MatrixXd::Identity(p,p);
+  // Eigen::MatrixXd GGh_var_r_Pb_I_p = GGh + var_r*SMARTparams.loglikdivide*Pb*I_p;
+  // Eigen::VectorXd beta(p);
+
+  // // Use BiCGSTAB to solve the system
+  // Eigen::BiCGSTAB<Eigen::MatrixXd> solver;
+  // solver.compute(GGh_var_r_Pb_I_p);
+  // beta = solver.solve(G.transpose() * r);
+  double var_r = var_epsilon/(1-SMARTparams.R2p);
+  Eigen::MatrixXd Pb = (GGh.diagonal().sum()/(n*var_r*SMARTparams.R2p)) * Eigen::MatrixXd::Identity(p, p);
+
+  Eigen::VectorXd beta(p);
+  Eigen::LDLT<Eigen::MatrixXd> solver;
+  solver.compute(GGh + var_epsilon * SMARTparams.loglikdivide * Pb);
+  if(solver.info() == Eigen::NumericalIssue || solver.info() == Eigen::InvalidInput) {
+    int iter = 0;
+    while(true) {
+      iter++;
+      std::cout << iter << std::endl;
+      Pb *= 2.01;
+      solver.compute(GGh + var_epsilon * SMARTparams.loglikdivide * Pb);
+      if(solver.info() != Eigen::NumericalIssue && solver.info() != Eigen::InvalidInput) {
+        beta = solver.solve(G.transpose() * r);
+        break;
+      }
+    }
+  } else {
+    beta = solver.solve(G.transpose() * r);
+  }
+  // Check if the solution is valid, and if not, use a larger Pb
+  // int max_iter = 100; // set a maximum number of iterations
+  // int iter = 0;
+  // while (solver.info() != Eigen::Success && iter < max_iter) {
+  //   iter++;
+  //   Pb = Pb * 2.01;
+  //   GGh_var_r_Pb_I_p = GGh + var_r * SMARTparams.loglikdivide * Pb * I_p;
+  //   solver.compute(GGh_var_r_Pb_I_p);
+  //   beta = solver.solve(G.transpose() * r);
+  // }
+  // Eigen::VectorXd Gbeta = G * beta;
+  // double loglik = -0.5*(r-Gbeta).squaredNorm()/var_r/SMARTparams.loglikdivide;
+  // double logpdfbeta = -0.5*(p*log(2*M_PI) - p*log(Pb) + Pb*beta.squaredNorm());
+
+
+  Eigen::VectorXd Gbeta = G*beta;
+
+  Eigen::VectorXd diff = r - Gbeta;
+
+  double loglik = -0.5*((diff.array().square().sum())/var_epsilon)/SMARTparams.loglikdivide;
+  double logpdfbeta = -0.5*(p*log(2*M_PI) - p*log(Pb(0,0)) + Pb(0,0)*(beta.transpose()*beta)(0,0));
 
   double logpdfmu = 0;
   double logpdftau = 0;
@@ -136,6 +168,9 @@ FitBetaStruct fitbeta_cpp(Eigen::VectorXd r, Eigen::MatrixXd G, double var_epsil
   }
 
   double loss = -(loglik + logpdfbeta + logpdftau + logpdfmu);
+  // std::cout << diff.array().square().sum() << std::endl;
+
+  // std::cout << loglik << std::endl;
 
   FitBetaStruct FitBeta;
   FitBeta.loss = loss;
@@ -291,6 +326,7 @@ Eigen::MatrixXd loopfeatures_cpp(Eigen::VectorXd r, Eigen::VectorXd h, Eigen::Ma
     ps = p_sampled;
   }
 
+  // std::cout <<"ps size:" << ps.size() << std::endl;
   // loop through the columns in parallel
 
   int count = 0;
