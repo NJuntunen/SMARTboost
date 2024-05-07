@@ -88,6 +88,15 @@ add_parsnip_SMARTboost <- function() {
     func = list(pkg = "dials", fun = "mtry"),
     has_submodel = FALSE
   )
+
+  parsnip::set_pred(
+    model = "SMARTboost",
+    eng = "SMARTboost",
+    mode = "regression",
+    type = "numeric",
+    value = make_class_info("numeric")
+  )
+
 }
 
 #' @export
